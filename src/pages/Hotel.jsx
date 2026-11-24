@@ -203,7 +203,7 @@ export default function Hotel() {
                   display: 'flex',
                   flexDirection: 'column',
                   marginBottom: '16px',
-                  borderRadius: '0px',
+                  borderRadius: '12px',
                   overflow: 'hidden',
                   boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
                   background: '#fff',

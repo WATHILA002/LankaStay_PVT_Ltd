@@ -199,7 +199,7 @@ export default function Explore() {
               key={d.id}
               className="dest-card"
               onClick={() => navigate(d.link)}
-              style={{ borderRadius: '0px', cursor: 'pointer' }}
+              style={{ borderRadius: '12px', cursor: 'pointer' }}
             >
               <img src={d.img} alt={d.name} style={{ borderRadius: '0px' }} />
               <button

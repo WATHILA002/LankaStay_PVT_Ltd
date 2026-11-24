@@ -1,6 +1,4 @@
-/* Sri Lanka knowledge base for the elephant chatbot.
-   Add or edit topics freely: `keys` are matched against the visitor's message,
-   `answer` may contain simple HTML, `chips` are suggested follow-up buttons. */
+/* This is the knowlege base part of elephant chatbot. This help to Q&A. */
 window.LANKA_KB = {
   name: "Ayu",
   welcome: "Ayubowan! 🙏 I'm Ayu, your Sri Lanka travel guide. Ask me anything about hotels, weather, or destinations!",
