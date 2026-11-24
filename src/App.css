@@ -5141,7 +5141,9 @@ body.dark-mode { background: #000 !important; color: #f3f5f6; }
   background-color: #07090b !important;
   background-image:
     linear-gradient(rgba(0, 0, 0, .55), rgba(0, 0, 0, .15) 35%, rgba(7, 9, 11, .95) 92%),
-    url("./images/bgcc.png") !important;
+    var(--hero-bg, none) !important;
+  background-size: cover !important;
+  background-position: center !important;
 }
 .app.dark-mode .hero h2,
 .app.dark-mode .hero p,
