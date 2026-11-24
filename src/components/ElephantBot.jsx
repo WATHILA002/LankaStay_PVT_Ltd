@@ -4,10 +4,15 @@ import { assetUrl } from '../utils/assetUrl';
 
 export default function ElephantBot() {
   useEffect(() => {
-    // Only show the chatbot on the home page ('/')
-    if (window.location.pathname !== '/') return;
+    // Allow '/' locally and '/LankaStay_PVT_Ltd/' (with or without trailing slash) on GitHub Pages
+    const path = window.location.pathname;
+    const isHome =
+      path === '/' ||
+      path === '/LankaStay_PVT_Ltd' ||
+      path === '/LankaStay_PVT_Ltd/';
+    if (!isHome) return;
 
-    const KB = window.LANKA_KB;
+    const KB = window.LANKA_KB || {};
     const CFG = window.EBOT || {};
     const BOTTOM_OFFSET = CFG.bottomOffset || 0;
     const GRAVITY = 0.8;
@@ -67,7 +72,7 @@ export default function ElephantBot() {
     panel.innerHTML =
       '<header class="ebot-head">' +
         '<div class="ebot-avatar">🐘</div>' +
-        '<div class="ebot-title"><strong>' + KB.name + ' the Elephant</strong><small>Your Sri Lanka guide</small></div>' +
+        '<div class="ebot-title"><strong>' + (KB.name || 'Ayu') + ' the Elephant</strong><small>Your Sri Lanka guide</small></div>' +
         '<button class="ebot-close" type="button" aria-label="Close chat">✕</button>' +
       '</header>' +
       '<div class="ebot-msgs" aria-live="polite"></div>' +
@@ -77,7 +82,6 @@ export default function ElephantBot() {
         '<button type="submit" aria-label="Send">➤</button>' +
       '</form>';
 
-    // Target the mobile app frame container (.app) instead of document.body
     const appContainer = document.querySelector('.app') || document.body;
     appContainer.appendChild(root);
     appContainer.appendChild(panel);
@@ -89,9 +93,10 @@ export default function ElephantBot() {
     const form = panel.querySelector(".ebot-form");
     const input = form.querySelector("input");
 
-    let W = root.offsetWidth, H = root.offsetHeight;
+    let W = root.offsetWidth || 90;
+    let H = root.offsetHeight || 110;
     let bx = 0, by = 0, bw = window.innerWidth, bh = window.innerHeight;
-    
+
     function updateBounds() {
       const screenEl = document.querySelector('.screen') || document.querySelector('.app');
       if (screenEl) {
@@ -106,6 +111,8 @@ export default function ElephantBot() {
         bw = window.innerWidth;
         bh = window.innerHeight;
       }
+      if (root.offsetWidth) W = root.offsetWidth;
+      if (root.offsetHeight) H = root.offsetHeight;
     }
     updateBounds();
 
@@ -315,9 +322,9 @@ export default function ElephantBot() {
     const findTopic = (text) => {
       const q = " " + text.toLowerCase().replace(/[^a-z0-9'\s-]/g, " ").replace(/\s+/g, " ") + " ";
       let best = null, bestScore = 0;
-      KB.topics.forEach((t) => {
+      (KB.topics || []).forEach((t) => {
         let score = 0;
-        t.keys.forEach((k) => {
+        (t.keys || []).forEach((k) => {
           if (q.indexOf(k) !== -1) score += k.length;
         });
         if (score > bestScore) { bestScore = score; best = t; }
