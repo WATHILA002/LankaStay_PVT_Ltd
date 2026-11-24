@@ -140,7 +140,10 @@ export default function Home() {
   return (
     <main className="screen">
       {/* Hero Section */}
-      <section className="hero">
+      <section
+        className="hero"
+        style={{ '--hero-bg': `url(${assetUrl('/images/bgcc.png')})` }}
+      >
         <div className="top-bar">
           <i className="fa-solid fa-umbrella-beach logo-icon"></i>
           <div className="brand">

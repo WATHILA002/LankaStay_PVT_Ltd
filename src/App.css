@@ -554,11 +554,13 @@ button {
 /* Home Hero */
 .hero {
   position: relative;
-  height: 350px;
+  min-height: 350px;
   padding: 16px 20px 0;
   color: #ffffff;
   background-color: #1d6b4f;
-  background-image: linear-gradient(#0a3d2c99, #0a3d2c00 35%, #052a1ccc 85%), url("./images/bgcc.png");
+  background-image:
+    linear-gradient(#0a3d2c88, #0a3d2c22 45%, #052a1c99 90%),
+    var(--hero-bg, none);
   background-size: cover;
   background-position: center;
 }
