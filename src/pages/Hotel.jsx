@@ -4,15 +4,125 @@ import { supabase } from '../SupabaseClient';
 import { assetUrl } from '../utils/assetUrl';
 
 const BASE = import.meta.env.BASE_URL;
+const API_BASE = import.meta.env.VITE_MONSOON_API_URL || 'http://localhost:8000';
 
-const hotelsData = [
-  { id: 101, name: "Water Garden Sigiriya", region: "Cultural", price: 28000, score: 94, img: `${BASE}images/water-garden-sigiriya.jpg`, plainEnglish: "Near Sigiriya Rock, Optimal Dry Season.", description: "Experience luxury amidst ancient history. Water Garden Sigiriya offers private villas, stunning views of the Sigiriya rock fortress, and world-class hospitality." },
-  { id: 102, name: "Uga Bay Pasikuda", region: "East Coast", price: 32000, score: 89, img: `${BASE}images/ugabaypasikuda.webp`, plainEnglish: "East coast calm waters, perfect weather.", description: "A tropical beach sanctuary on the sun-drenched east coast. Enjoy golden sandy beaches, crystal-clear shallow waters, and luxury beachfront suites." },
-  { id: 103, name: "Avani Bentota Resort", region: "South Coast", price: 22000, score: 62, img: `${BASE}images/avanib.webp`, plainEnglish: "South-West monsoon down-ranking applied.", description: "Designed by renowned architect Geoffrey Bawa, Avani Bentota blends Dutch colonial charm with modern beachfront luxury." },
-  { id: 104, name: "Argyle Luxury Hatton", region: "Hill Country", price: 18500, score: 88, img: assetUrl("https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=400"), plainEnglish: "Cool tea plantation views, 30 min road access.", description: "Nestled in the misty hills of Hatton, Argyle Luxury offers panoramic tea garden views, crisp mountain air, and cozy fireplaces." }
+const MONTHS = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December'
 ];
 
+const hotelsData = [
+  {
+    id: 101,
+    name: "Water Garden Sigiriya",
+    region: "Cultural",
+    price: 28000,
+    score: 94,
+    rating: 4.7,
+    img: `${BASE}images/water-garden-sigiriya.jpg`,
+    plainEnglish: "Near Sigiriya Rock, Optimal Dry Season.",
+    description: "Experience luxury amidst ancient history. Water Garden Sigiriya offers private villas, stunning views of the Sigiriya rock fortress, and world-class hospitality."
+  },
+  {
+    id: 102,
+    name: "Uga Bay Pasikuda",
+    region: "East Coast",
+    price: 32000,
+    score: 89,
+    rating: 4.7,
+    img: `${BASE}images/ugabaypasikuda.webp`,
+    plainEnglish: "East coast calm waters, perfect weather.",
+    description: "A tropical beach sanctuary on the sun-drenched east coast. Enjoy golden sandy beaches, crystal-clear shallow waters, and luxury beachfront suites."
+  },
+  {
+    id: 103,
+    name: "Avani Bentota Resort",
+    region: "South Coast",
+    price: 22000,
+    score: 62,
+    rating: 4.7,
+    img: `${BASE}images/avanib.webp`,
+    plainEnglish: "South-West monsoon down-ranking applied.",
+    description: "Designed by renowned architect Geoffrey Bawa, Avani Bentota blends Dutch colonial charm with modern beachfront luxury."
+  },
+  {
+    id: 104,
+    name: "Argyle Luxury Hatton",
+    region: "Hill Country",
+    price: 18500,
+    score: 88,
+    rating: 4.7,
+    img: assetUrl("https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=400"),
+    plainEnglish: "Cool tea plantation views, 30 min road access.",
+    description: "Nestled in the misty hills of Hatton, Argyle Luxury offers panoramic tea garden views, crisp mountain air, and cozy fireplaces."
+  }
+];
+
+function fallbackMonsoonRank(list, month) {
+  const mapped = list.map((h) => {
+    const reg = (h.region || '').toLowerCase();
+    let monsoonActive = false;
+    let score = h.score || 85;
+    let seasonLabel = 'Dry / Favorable';
+    let plainEnglish = h.plainEnglish;
+
+    if ([5, 6, 7, 8, 9].includes(month)) {
+      if (reg.includes('south')) {
+        monsoonActive = true;
+        score = 52;
+        seasonLabel = 'Southwest Monsoon Active';
+        plainEnglish = 'Down-ranked: Southwest monsoon rains in South Coast.';
+      } else if (reg.includes('hill')) {
+        monsoonActive = true;
+        score = 65;
+        seasonLabel = 'Southwest Showers';
+        plainEnglish = 'Adjusted: Hill country showers during Southwest monsoon.';
+      } else {
+        monsoonActive = false;
+        score = reg.includes('east') ? 96 : 92;
+        seasonLabel = 'No Monsoon (Dry)';
+        plainEnglish = 'Top fit: No active monsoon in this region.';
+      }
+    } else if ([11, 12, 1, 2].includes(month)) {
+      if (reg.includes('east')) {
+        monsoonActive = true;
+        score = 54;
+        seasonLabel = 'Northeast Monsoon Active';
+        plainEnglish = 'Down-ranked: Northeast monsoon active on East Coast.';
+      } else {
+        monsoonActive = false;
+        score = reg.includes('south') ? 97 : 94;
+        seasonLabel = 'No Monsoon (Clear)';
+        plainEnglish = 'Top fit: Dry, sunny conditions with no monsoon.';
+      }
+    }
+
+    return {
+      ...h,
+      score,
+      monsoon_active: monsoonActive,
+      season_label: seasonLabel,
+      plainEnglish
+    };
+  });
+
+  return mapped.sort((a, b) => {
+    if (a.monsoon_active !== b.monsoon_active) {
+      return a.monsoon_active ? 1 : -1;
+    }
+    return b.score - a.score;
+  });
+}
+
 export default function Hotel() {
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
+  const [rankedHotels, setRankedHotels] = useState(() => fallbackMonsoonRank(hotelsData, new Date().getMonth() + 1));
+  const [monsoonBanner, setMonsoonBanner] = useState(
+    'Northeast Monsoon Active (Nov–Feb): East/North coast hotels are down-ranked while dry regions lead.'
+  );
+  const [loadingRank, setLoadingRank] = useState(false);
+  const [apiConnected, setApiConnected] = useState(false);
+
   const [currentRegion, setCurrentRegion] = useState('all');
   const [savedItems, setSavedItems] = useState({});
   const [userId, setUserId] = useState(null);
@@ -31,6 +141,46 @@ export default function Hotel() {
 
     return () => subscription.unsubscribe();
   }, []);
+
+  useEffect(() => {
+    let active = true;
+
+    async function fetchMonsoonRanking() {
+      setLoadingRank(true);
+      try {
+        const res = await fetch(`${API_BASE}/api/hotels/rank`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            month: selectedMonth,
+            hotels: hotelsData
+          })
+        });
+
+        if (!res.ok) throw new Error(`API status ${res.status}`);
+        const data = await res.json();
+
+        if (active && Array.isArray(data.hotels)) {
+          setRankedHotels(data.hotels);
+          if (data.monsoon_banner) setMonsoonBanner(data.monsoon_banner);
+          setApiConnected(true);
+        }
+      } catch (err) {
+        console.warn('Monsoon API fallback active:', err.message);
+        if (active) {
+          setRankedHotels(fallbackMonsoonRank(hotelsData, selectedMonth));
+          setApiConnected(false);
+        }
+      } finally {
+        if (active) setLoadingRank(false);
+      }
+    }
+
+    fetchMonsoonRanking();
+    return () => {
+      active = false;
+    };
+  }, [selectedMonth]);
 
   const fetchSavedItems = async () => {
     try {
@@ -58,8 +208,8 @@ export default function Hotel() {
   };
 
   const filteredHotels = currentRegion === 'all'
-    ? hotelsData
-    : hotelsData.filter(h => h.region.toLowerCase() === currentRegion.toLowerCase());
+    ? rankedHotels
+    : rankedHotels.filter(h => h.region.toLowerCase() === currentRegion.toLowerCase());
 
   const toggleHeart = async (hotel, e) => {
     e.stopPropagation();
@@ -90,7 +240,7 @@ export default function Hotel() {
             destination_id: hotel.id,
             name: hotel.name,
             category: hotel.region,
-            rating: "4.7",
+            rating: String(hotel.rating || "4.7"),
             desc: hotel.plainEnglish,
             img: hotel.img,
             link: `/hotel-detail?id=${hotel.id}`
@@ -168,8 +318,34 @@ export default function Hotel() {
         <div className="monsoon-warning">
           <i className="fa-solid fa-cloud-showers-heavy"></i>
           <span data-i18n="monsoon_warning">
-            <b>South-West Monsoon Warning:</b> Beach hotels in Galle &amp; Bentota down-ranked during rainy months.
+            <b>Monsoon Engine ({MONTHS[selectedMonth - 1]}):</b> {monsoonBanner}{' '}
+            <small style={{ opacity: 0.85 }}>
+              {loadingRank ? '(Updating...)' : apiConnected ? '(Live API)' : '(Local Preview)'}
+            </small>
           </span>
+        </div>
+
+        <div style={{ marginTop: '10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px' }}>
+          <label htmlFor="monsoonMonthSelect" style={{ fontSize: '13px', fontWeight: '600' }}>
+            Travel Month:
+          </label>
+          <select
+            id="monsoonMonthSelect"
+            value={selectedMonth}
+            onChange={(e) => setSelectedMonth(Number(e.target.value))}
+            style={{
+              padding: '6px 10px',
+              borderRadius: '8px',
+              border: '1px solid #cbd5e1',
+              fontSize: '13px',
+              background: '#fff',
+              color: '#111'
+            }}
+          >
+            {MONTHS.map((m, i) => (
+              <option key={m} value={i + 1}>{m}</option>
+            ))}
+          </select>
         </div>
       </div>
       <br />
@@ -192,8 +368,10 @@ export default function Hotel() {
         {filteredHotels.length === 0 ? (
           <p className="empty">No hotels found for this region.</p>
         ) : (
-          filteredHotels.map((h) => {
+          filteredHotels.map((h, index) => {
             const discountedPrice = h.price * (1 - discountRate);
+            const isTopPick = !h.monsoon_active && index === 0;
+
             return (
               <article
                 key={h.id}
@@ -208,13 +386,14 @@ export default function Hotel() {
                   boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
                   background: '#fff',
                   cursor: 'pointer',
-                  position: 'relative'
+                  position: 'relative',
+                  opacity: h.monsoon_active ? 0.88 : 1
                 }}
               >
                 <div style={{ position: 'relative', height: '160px', width: '100%' }}>
                   <img src={h.img} alt={h.name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '0px' }} />
                   <span className="trip-score-badge" style={{ position: 'absolute', top: '12px', left: '12px' }}>
-                    Fit Score: {h.score}/100
+                    {isTopPick ? '★ Top Fit: ' : 'Fit Score: '}{h.score}/100
                   </span>
 
                   <div style={{ position: 'absolute', top: '12px', right: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -245,18 +424,34 @@ export default function Hotel() {
                         borderRadius: '8px',
                         fontSize: '12px',
                         display: 'flex',
-                        alignItem: 'center',
+                        alignItems: 'center',
                         gap: '4px'
                       }}
                     >
-                      <i className="fa-solid fa-star" style={{ color: '#ffc94d' }}></i> 4.7
+                      <i className="fa-solid fa-star" style={{ color: '#ffc94d' }}></i> {h.rating || '4.7'}
                     </span>
                   </div>
                 </div>
 
                 <div style={{ padding: '14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px' }}>
                   <div style={{ flex: 1 }}>
-                    <h3 style={{ margin: '0 0 4px 0', fontSize: '16px', fontWeight: '700' }}>{h.name}</h3>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', flexWrap: 'wrap' }}>
+                      <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '700' }}>{h.name}</h3>
+                      {h.season_label && (
+                        <span
+                          style={{
+                            fontSize: '11px',
+                            padding: '2px 7px',
+                            borderRadius: '999px',
+                            fontWeight: '600',
+                            background: h.monsoon_active ? '#fee2e2' : '#dcfce7',
+                            color: h.monsoon_active ? '#991b1b' : '#166534'
+                          }}
+                        >
+                          {h.season_label}
+                        </span>
+                      )}
+                    </div>
                     <p style={{ margin: '0 0 8px 0', fontSize: '12px', opacity: 0.8 }}>{h.plainEnglish}</p>
 
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
