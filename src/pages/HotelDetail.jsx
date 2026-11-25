@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../SupabaseClient';
 import { assetUrl } from '../utils/assetUrl';
@@ -66,6 +66,72 @@ const hotelsData = [
   }
 ];
 
+const MONTHS = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December"
+];
+
+const SW_MONSOON_MONTHS = new Set(["May", "June", "July", "August", "September"]);
+const NE_MONSOON_MONTHS = new Set(["November", "December", "January", "February"]);
+
+function computeLocalMonsoonScore(hotel, month) {
+  const baseScore = hotel.score ?? 80;
+  const region = hotel.region || "Cultural";
+  let delta = 0;
+  let monsoonNote = hotel.plainEnglish;
+
+  if (region === "South Coast") {
+    if (SW_MONSOON_MONTHS.has(month)) {
+      delta = -32;
+      monsoonNote = `South-West monsoon active in ${month} — rough seas & rain on South Coast.`;
+    } else if (NE_MONSOON_MONTHS.has(month)) {
+      delta = 14;
+      monsoonNote = `Dry & sunny South Coast conditions expected in ${month}.`;
+    } else {
+      delta = 8;
+      monsoonNote = `Inter-monsoon transition in ${month} — generally warm along South Coast.`;
+    }
+  } else if (region === "East Coast") {
+    if (NE_MONSOON_MONTHS.has(month)) {
+      delta = -30;
+      monsoonNote = `North-East monsoon active in ${month} — rain & choppier East Coast waters.`;
+    } else if (SW_MONSOON_MONTHS.has(month)) {
+      delta = 10;
+      monsoonNote = `Peak East Coast dry & calm beach season in ${month}.`;
+    } else {
+      delta = 6;
+      monsoonNote = `Pleasant East Coast conditions during ${month}.`;
+    }
+  } else if (region === "Hill Country") {
+    if (SW_MONSOON_MONTHS.has(month)) {
+      delta = -14;
+      monsoonNote = `Hill Country misty & wetter during ${month} South-West monsoon.`;
+    } else if (month === "January" || month === "February" || month === "March") {
+      delta = 8;
+      monsoonNote = `Crisp, clearer highland weather in ${month}.`;
+    } else {
+      delta = 2;
+      monsoonNote = hotel.plainEnglish;
+    }
+  } else {
+    // Cultural Triangle
+    if (NE_MONSOON_MONTHS.has(month) && (month === "November" || month === "December")) {
+      delta = -8;
+      monsoonNote = `Occasional showers possible in Cultural Triangle in ${month}.`;
+    } else {
+      delta = 4;
+      monsoonNote = `Warm, favorable Cultural Triangle weather in ${month}.`;
+    }
+  }
+
+  const tripFitScore = Math.max(25, Math.min(99, baseScore + delta));
+  return {
+    tripFitScore,
+    monsoonNote,
+    monsoonWarning: delta <= -20 ? monsoonNote : null
+  };
+}
+
 const countryCodes = [
   { name: "Sri Lanka", code: "+94", flag: "🇱🇰" },
   { name: "United States", code: "+1", flag: "🇺🇸" },
@@ -78,11 +144,23 @@ const countryCodes = [
 ];
 
 export default function HotelDetail() {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
-  const hotelId = parseInt(searchParams.get('id') || '101');
-  const hotel = hotelsData.find(h => h.id === hotelId) || hotelsData[0];
+  const hotelId = parseInt(searchParams.get('id') || '101', 10);
+  const hotel = useMemo(
+    () => hotelsData.find((h) => h.id === hotelId) || hotelsData[0],
+    [hotelId]
+  );
 
+  const initialMonth = MONTHS.includes(searchParams.get('month'))
+    ? searchParams.get('month')
+    : MONTHS[new Date().getMonth()];
+
+  const [travelMonth, setTravelMonth] = useState(initialMonth);
+  const [rankingMeta, setRankingMeta] = useState(() =>
+    computeLocalMonsoonScore(hotel, initialMonth)
+  );
+  const [rankingSource, setRankingSource] = useState('local');
   const [activeImage, setActiveImage] = useState(hotel.images[0]);
 
   // Newsletter states
@@ -105,7 +183,91 @@ export default function HotelDetail() {
 
   useEffect(() => {
     setActiveImage(hotel.images[0]);
-  }, [hotelId]);
+  }, [hotel]);
+
+  useEffect(() => {
+    const queryMonth = searchParams.get('month');
+    if (queryMonth && MONTHS.includes(queryMonth) && queryMonth !== travelMonth) {
+      setTravelMonth(queryMonth);
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const fallback = computeLocalMonsoonScore(hotel, travelMonth);
+    setRankingMeta(fallback);
+
+    const apiBase = import.meta.env.VITE_MONSOON_API_URL;
+    if (!apiBase) {
+      setRankingSource('local');
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    const controller = new AbortController();
+    fetch(`${apiBase.replace(/\/$/, '')}/api/hotels/rank`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        month: travelMonth,
+        hotels: [
+          {
+            id: hotel.id,
+            name: hotel.name,
+            region: hotel.region,
+            base_score: hotel.score,
+            plain_english: hotel.plainEnglish
+          }
+        ]
+      }),
+      signal: controller.signal
+    })
+      .then((res) => (res.ok ? res.json() : Promise.reject(new Error(`HTTP ${res.status}`))))
+      .then((data) => {
+        if (cancelled) return;
+        const rankedItem = Array.isArray(data)
+          ? data.find((item) => item.id === hotel.id) || data[0]
+          : Array.isArray(data?.hotels)
+          ? data.hotels.find((item) => item.id === hotel.id) || data.hotels[0]
+          : null;
+
+        if (rankedItem) {
+          setRankingMeta({
+            tripFitScore:
+              rankedItem.trip_fit_score ?? rankedItem.score ?? fallback.tripFitScore,
+            monsoonNote:
+              rankedItem.reason ||
+              rankedItem.plain_english ||
+              rankedItem.monsoon_note ||
+              fallback.monsoonNote,
+            monsoonWarning: rankedItem.monsoon_warning ?? fallback.monsoonWarning
+          });
+          setRankingSource('api');
+        } else {
+          setRankingSource('local');
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setRankingMeta(fallback);
+          setRankingSource('local');
+        }
+      });
+
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
+  }, [hotel, travelMonth]);
+
+  const handleMonthChange = (e) => {
+    const nextMonth = e.target.value;
+    setTravelMonth(nextMonth);
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.set('month', nextMonth);
+    setSearchParams(nextParams, { replace: true });
+  };
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -132,7 +294,7 @@ export default function HotelDetail() {
             phone: fullPhoneNumber,
             check_in: formData.checkIn,
             check_out: formData.checkOut,
-            guests: parseInt(formData.guests),
+            guests: parseInt(formData.guests, 10),
             total_price: discountedRate
           }
         ]);
@@ -164,7 +326,6 @@ export default function HotelDetail() {
 
     setSubscribing(true);
     try {
-      // 1. Save subscriber data to Supabase Database
       const { error } = await supabase
         .from('subscribers')
         .insert([{ name: subscriberName.trim(), email: subscriberEmail.trim() }]);
@@ -176,7 +337,6 @@ export default function HotelDetail() {
           alert('Subscription failed: ' + error.message);
         }
       } else {
-        // 2. Try sending confirmation email via EmailJS (safely wrapped so it won't crash if placeholders are not set)
         try {
           await emailjs.send(
             'YOUR_SERVICE_ID',
@@ -204,11 +364,18 @@ export default function HotelDetail() {
     }
   };
 
+  const badgeColor =
+    rankingMeta.tripFitScore >= 80
+      ? '#1d6b4f'
+      : rankingMeta.tripFitScore >= 65
+      ? '#b45309'
+      : '#b91c1c';
+
   return (
     <main className="screen">
       <header className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-          <Link to="/hotels"><i className="fa-solid fa-arrow-left"></i></Link>
+          <Link to={`/hotels?month=${encodeURIComponent(travelMonth)}`}><i className="fa-solid fa-arrow-left"></i></Link>
           <h2>Hotel Details &amp; Booking</h2>
         </div>
         <Link to="/saved" title="Saved Places" style={{ color: 'inherit', fontSize: '1.2rem' }}>
@@ -218,12 +385,24 @@ export default function HotelDetail() {
 
       <section style={{ padding: '16px' }}>
         <div style={{ borderRadius: '0px', overflow: 'hidden', boxShadow: '0 4px 12px rgba(0,0,0,0.08)', background: '#fff' }}>
-          
+
           {/* Large Main Photo */}
           <div style={{ position: 'relative', height: '260px', width: '100%' }}>
             <img src={activeImage} alt={hotel.name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '0px' }} />
-            <span style={{ position: 'absolute', top: '12px', left: '12px', background: '#1d6b4f', color: '#fff', padding: '6px 12px', borderRadius: '0px', fontSize: '12px', fontWeight: 'bold' }}>
-              Fit Score: {hotel.score}/100
+            <span
+              style={{
+                position: 'absolute',
+                top: '12px',
+                left: '12px',
+                background: badgeColor,
+                color: '#fff',
+                padding: '6px 12px',
+                borderRadius: '0px',
+                fontSize: '12px',
+                fontWeight: 'bold'
+              }}
+            >
+              Fit Score ({travelMonth}): {rankingMeta.tripFitScore}/100
             </span>
           </div>
 
@@ -248,11 +427,68 @@ export default function HotelDetail() {
           </div>
 
           <div style={{ padding: '20px' }}>
+            {/* Travel Month Selector for Live Trip Fit Score */}
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                gap: '10px',
+                flexWrap: 'wrap',
+                background: '#f8faf9',
+                padding: '10px 12px',
+                border: '1px solid #e2e8e5',
+                marginBottom: '14px'
+              }}
+            >
+              <label htmlFor="detail-travel-month" style={{ fontSize: '13px', fontWeight: '600', color: '#1f2937' }}>
+                <i className="fa-solid fa-cloud-sun-rain" style={{ marginRight: '6px', color: '#1d6b4f' }}></i>
+                Travel Month ({hotel.region})
+              </label>
+              <select
+                id="detail-travel-month"
+                value={travelMonth}
+                onChange={handleMonthChange}
+                style={{
+                  padding: '6px 10px',
+                  borderRadius: '8px',
+                  border: '1px solid #cbd5e1',
+                  fontSize: '13px',
+                  background: '#fff',
+                  fontWeight: '600'
+                }}
+              >
+                {MONTHS.map((m) => (
+                  <option key={m} value={m}>{m}</option>
+                ))}
+              </select>
+            </div>
+
             <h1 style={{ margin: '0 0 8px 0', fontSize: '22px', fontWeight: '700' }}>{hotel.name}</h1>
             <p style={{ margin: '0 0 12px 0', color: '#555', fontSize: '14px' }}>{hotel.description}</p>
-            <p style={{ margin: '0 0 16px 0', color: '#1d6b4f', fontSize: '13px', fontWeight: '600' }}>
-              <i className="fa-solid fa-circle-info"></i> {hotel.plainEnglish}
+            <p style={{ margin: '0 0 12px 0', color: '#1d6b4f', fontSize: '13px', fontWeight: '600' }}>
+              <i className="fa-solid fa-circle-info"></i> {rankingMeta.monsoonNote}{' '}
+              <span style={{ color: '#6b7280', fontWeight: '400' }}>
+                ({rankingSource === 'api' ? 'Monsoon Engine API' : 'Seasonal Engine'})
+              </span>
             </p>
+
+            {rankingMeta.monsoonWarning && (
+              <div
+                style={{
+                  background: '#fef2f2',
+                  borderLeft: '4px solid #b91c1c',
+                  color: '#991b1b',
+                  padding: '10px 12px',
+                  fontSize: '13px',
+                  fontWeight: '600',
+                  marginBottom: '16px'
+                }}
+              >
+                <i className="fa-solid fa-triangle-exclamation" style={{ marginRight: '6px' }}></i>
+                {rankingMeta.monsoonWarning}
+              </div>
+            )}
 
             {/* Rates Section */}
             <div style={{ background: '#f8f9fa', padding: '15px', borderRadius: '0px', borderLeft: '4px solid #1d6b4f', marginBottom: '20px' }}>
@@ -274,7 +510,7 @@ export default function HotelDetail() {
             <div style={{ marginBottom: '20px' }}>
               <button
                 type="button"
-                onClick={() => navigate('/hotels')}
+                onClick={() => navigate(`/hotels?month=${encodeURIComponent(travelMonth)}`)}
                 style={{
                   background: '#f44336',
                   color: 'white',
