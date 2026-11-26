@@ -429,18 +429,21 @@ export default function Home() {
             <p data-i18n="ele_t3" className="elephant-desc">
               Sri Lanka is home to the Asian elephant subspecies (Elephas maximus maximus). Human-elephant conflict and habitat loss severely threaten their survival. Join conservation efforts, support ethical elephant sanctuaries, and protect their natural migratory corridors.
             </p>
-            <div className="elephant-footer">
-              <div className="elephant-stat">
-                <i className="fa-solid fa-tree"></i>
-                <span data-i18n="ele_t4"><b>Udawalawe &amp; Minneriya</b> Protection Zones</span>
-              </div>
-              <button
+          <div className="elephant-footer">
+            <div className="elephant-stat">
+             <i className="fa-solid fa-tree"></i>
+              <span data-i18n="ele_t4"><b>Udawalawe &amp; Minneriya</b> Protection Zones</span>
+            </div>
+             <a
+                href="https://millenniumelephantfoundation.com/"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="elephant-action-btn"
-                onClick={() => alert('Thank you for supporting Sri Lankan Elephant Conservation!')}
-              >
-                <span data-i18n="ele_btn">Support Now</span>
-                <i className="fa-solid fa-arrow-right"></i>
-              </button>
+                style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+             >
+              <span data-i18n="ele_btn">Support Now</span>
+             <i className="fa-solid fa-arrow-right"></i>
+              </a>
             </div>
           </div>
         </article>
