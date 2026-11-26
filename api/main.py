@@ -1,10 +1,26 @@
 from datetime import datetime
-from typing import List, Optional
-from fastapi import FastAPI
+import os
+from pathlib import Path
+from typing import List, Literal, Optional
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
-app = FastAPI(title="LankaStay Monsoon Hotel Ranking API")
+try:
+    from dotenv import load_dotenv
+    ENV_PATH = Path(__file__).resolve().parent.parent / ".env"
+    load_dotenv(dotenv_path=ENV_PATH, override=True)
+except ImportError:
+    pass
+
+try:
+    from google import genai
+    from google.genai import types
+except ImportError:
+    genai = None
+    types = None
+
+app = FastAPI(title="LankaStay Monsoon Hotel Ranking & Ayu Chat API")
 
 app.add_middleware(
     CORSMiddleware,
@@ -13,6 +29,19 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+GEMINI_API_KEY = (os.getenv("GEMINI_API_KEY") or "").strip()
+gemini_client = (
+    genai.Client(api_key=GEMINI_API_KEY)
+    if (GEMINI_API_KEY and genai is not None)
+    else None
+)
+
+AYU_SYSTEM_PROMPT = """
+You are Ayu, the friendly elephant-themed travel assistant for LankaStay (Lanka Stay / LankaGo (Pvt) Ltd) in Sri Lanka.
+Help travelers with Sri Lanka destinations, monsoon and seasonal weather advice, hotels, routes, packing, culture, and trip planning.
+Keep answers clear, helpful, and concise. Match the user's language (English, Sinhala, or Tamil) when appropriate.
+""".strip()
 
 
 class HotelInput(BaseModel):
@@ -30,6 +59,17 @@ class HotelInput(BaseModel):
 class RankHotelsRequest(BaseModel):
     month: Optional[int] = None  # 1 - 12 (defaults to current month)
     hotels: List[HotelInput]
+
+
+class ChatMessage(BaseModel):
+    role: Literal["user", "assistant"]
+    content: str = Field(..., min_length=1)
+
+
+class ChatRequest(BaseModel):
+    message: str = Field(..., min_length=1)
+    month: Optional[int | str] = None
+    history: List[ChatMessage] = Field(default_factory=list)
 
 
 def normalize_zone(region: str, name: str = "") -> str:
@@ -177,3 +217,56 @@ def rank_hotels(payload: RankHotelsRequest):
         "monsoon_banner": active_monsoon_banner,
         "hotels": ranked_list,
     }
+
+
+@app.post("/api/chat")
+def chat_with_ayu(payload: ChatRequest):
+    user_text = payload.message.strip()
+    if not user_text:
+        raise HTTPException(status_code=400, detail="Message cannot be empty.")
+
+    if gemini_client is None or types is None:
+        return {
+            "reply": (
+                "Ayu is running in basic fallback mode right now because GEMINI_API_KEY is not set on the server. "
+                "Ask me about Sri Lanka regions (Cultural Triangle, East Coast, South Coast, Hill Country), monsoon months, or hotels!"
+            ),
+            "source": "fallback",
+        }
+
+    contents = []
+    for msg in payload.history[-8:]:
+        gemini_role = "model" if msg.role == "assistant" else "user"
+        contents.append(
+            types.Content(
+                role=gemini_role,
+                parts=[types.Part.from_text(text=msg.content)],
+            )
+        )
+
+    prompt_text = (
+        f"[Travel Month Context: {payload.month}] {user_text}"
+        if payload.month is not None
+        else user_text
+    )
+    contents.append(
+        types.Content(
+            role="user",
+            parts=[types.Part.from_text(text=prompt_text)],
+        )
+    )
+
+    try:
+        response = gemini_client.models.generate_content(
+            model="gemini-3.8-flash",
+            contents=contents,
+            config=types.GenerateContentConfig(
+                system_instruction=AYU_SYSTEM_PROMPT,
+            ),
+        )
+        return {
+            "reply": response.text or "I couldn't generate a response right now. Please try again.",
+            "source": "gemini",
+        }
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"Ayu AI error: {exc}")

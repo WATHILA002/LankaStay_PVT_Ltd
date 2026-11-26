@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { supabase } from '../SupabaseClient';
 import { assetUrl } from '../utils/assetUrl';
+import { recordActivity } from '../utils/activityLogger';
 
 const placesData = {
   sigiriya: {
@@ -253,7 +254,12 @@ export default function PlaceDetail() {
 
   useEffect(() => {
     scrollToTop();
-  }, [placeKey]);
+    recordActivity({
+      action: 'Viewed Place',
+      item: place.title,
+      placeKey,
+    });
+  }, [placeKey, place.title]);
 
   const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place.mapQuery)}`;
   const embedMapUrl = `https://maps.google.com/maps?q=${encodeURIComponent(place.mapQuery)}&t=&z=13&ie=UTF8&iwloc=&output=embed`;
@@ -354,14 +360,14 @@ export default function PlaceDetail() {
       `}</style>
 
       {/* Hero Header - Sharp rectangular box & crystal clear image */}
-      <header 
-        className="loc-hero" 
-        style={{ 
-          backgroundImage: `url('${place.image}')`, 
-          backgroundSize: 'cover', 
-          backgroundPosition: 'center', 
-          width: '100%', 
-          margin: 0 
+      <header
+        className="loc-hero"
+        style={{
+          backgroundImage: `url('${place.image}')`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          width: '100%',
+          margin: 0
         }}
       >
         <div className="loc-hero-overlay" style={{ width: '100%' }}>
@@ -392,17 +398,17 @@ export default function PlaceDetail() {
 
         {/* Plan My Trip Button */}
         <div style={{ margin: '20px 0', textAlign: 'center' }}>
-          <Link 
-            to={`/planner?destination=${placeKey}`} 
-            className="ai-action-btn" 
-            style={{ 
-              display: 'inline-flex', 
-              alignItems: 'center', 
-              justifyContent: 'center', 
-              width: '100%', 
-              padding: '14px', 
-              borderRadius: '0px', 
-              fontSize: '1rem', 
+          <Link
+            to={`/planner?destination=${placeKey}`}
+            className="ai-action-btn"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: '100%',
+              padding: '14px',
+              borderRadius: '0px',
+              fontSize: '1rem',
               fontWeight: '600',
               textDecoration: 'none',
               background: '#0f172a',
@@ -433,22 +439,22 @@ export default function PlaceDetail() {
           <p style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '12px' }}>Click any photo to view full size</p>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px' }} className="gallery-grid">
             {place.gallery.map((photoUrl, idx) => (
-              <div 
-                key={idx} 
+              <div
+                key={idx}
                 onClick={() => setSelectedImage(photoUrl)}
-                style={{ 
-                  borderRadius: '0px', 
-                  overflow: 'hidden', 
-                  height: '110px', 
-                  cursor: 'pointer', 
+                style={{
+                  borderRadius: '0px',
+                  overflow: 'hidden',
+                  height: '110px',
+                  cursor: 'pointer',
                   border: '1px solid #e2e8f0',
                   position: 'relative'
                 }}
               >
-                <img 
-                  src={photoUrl} 
-                  alt={`${place.title} ${idx + 1}`} 
-                  style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '0px' }} 
+                <img
+                  src={photoUrl}
+                  alt={`${place.title} ${idx + 1}`}
+                  style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '0px' }}
                 />
               </div>
             ))}
@@ -457,7 +463,7 @@ export default function PlaceDetail() {
 
         {/* Lightbox Modal for Photo Zoom */}
         {selectedImage && (
-          <div 
+          <div
             onClick={() => setSelectedImage(null)}
             style={{
               position: 'fixed',
@@ -474,7 +480,7 @@ export default function PlaceDetail() {
             }}
           >
             <div style={{ position: 'relative', maxWidth: '90%', maxHeight: '90%' }} onClick={(e) => e.stopPropagation()}>
-              <span 
+              <span
                 onClick={() => setSelectedImage(null)}
                 style={{
                   position: 'absolute',
@@ -488,10 +494,10 @@ export default function PlaceDetail() {
               >
                 &times;
               </span>
-              <img 
-                src={selectedImage} 
-                alt="Enlarged View" 
-                style={{ width: '100%', maxHeight: '80vh', objectFit: 'contain', borderRadius: '0px', boxShadow: '0 8px 24px rgba(0,0,0,0.5)' }} 
+              <img
+                src={selectedImage}
+                alt="Enlarged View"
+                style={{ width: '100%', maxHeight: '80vh', objectFit: 'contain', borderRadius: '0px', boxShadow: '0 8px 24px rgba(0,0,0,0.5)' }}
               />
             </div>
           </div>
@@ -514,7 +520,7 @@ export default function PlaceDetail() {
         <section className="loc-section" style={{ background: '#fff', padding: '20px', marginBottom: '20px', boxShadow: '0 4px 12px rgba(0,0,0,0.04)' }}>
           <h2 className="loc-section-title" style={{ fontSize: '1.2rem', marginBottom: '12px' }}>Location &amp; Map</h2>
           <p style={{ fontSize: '0.85rem', color: '#64748b', marginBottom: '12px' }}>View the interactive map below or click the button to open Google Maps for turn-by-turn directions.</p>
-          
+
           <div style={{ width: '100%', height: '220px', borderRadius: '0px', overflow: 'hidden', border: '1px solid #e2e8f0', marginBottom: '12px' }}>
             <iframe
               title={`${place.title} Map`}
@@ -528,9 +534,9 @@ export default function PlaceDetail() {
             ></iframe>
           </div>
 
-          <a 
-            href={googleMapsUrl} 
-            target="_blank" 
+          <a
+            href={googleMapsUrl}
+            target="_blank"
             rel="noopener noreferrer"
             style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', background: '#0f172a', color: '#fff', padding: '12px', borderRadius: '0px', textDecoration: 'none', fontSize: '0.9rem', fontWeight: '600' }}
           >
@@ -566,9 +572,9 @@ export default function PlaceDetail() {
           <h2 className="loc-section-title" style={{ fontSize: '1.2rem', marginBottom: '12px' }}>Other Destinations</h2>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }}>
             {allOtherDestinations.map((dest) => (
-              <Link 
-                key={dest.key} 
-                to={`/place-detail?place=${dest.key}`} 
+              <Link
+                key={dest.key}
+                to={`/place-detail?place=${dest.key}`}
                 onClick={scrollToTop}
                 style={{ textDecoration: 'none', background: '#f8fafc', borderRadius: '0px', overflow: 'hidden', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column' }}
               >
@@ -714,19 +720,19 @@ export default function PlaceDetail() {
         <div className="footer-newsletter-card">
           <h3 className="newsletter-sub">Subscribe to receive travel tips and exclusive offers.</h3>
           <form className="newsletter-form" onSubmit={handleSubscribeSubmit}>
-            <input 
-              type="text" 
-              placeholder="Your Name" 
-              value={subscriberName} 
-              onChange={(e) => setSubscriberName(e.target.value)} 
-              required 
+            <input
+              type="text"
+              placeholder="Your Name"
+              value={subscriberName}
+              onChange={(e) => setSubscriberName(e.target.value)}
+              required
             />
-            <input 
-              type="email" 
-              placeholder="Your Email" 
-              value={subscriberEmail} 
-              onChange={(e) => setSubscriberEmail(e.target.value)} 
-              required 
+            <input
+              type="email"
+              placeholder="Your Email"
+              value={subscriberEmail}
+              onChange={(e) => setSubscriberEmail(e.target.value)}
+              required
             />
             <button type="submit" disabled={subscribing}>
               {subscribing ? 'Subscribing...' : 'Subscribe Now'}

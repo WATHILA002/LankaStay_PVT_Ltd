@@ -2,6 +2,32 @@ import { useEffect } from 'react';
 import '../utils/knowledge.js';
 import { assetUrl } from '../utils/assetUrl';
 
+function getChatApiBase() {
+  const configured = (import.meta.env.VITE_MONSOON_API_URL || '').trim();
+  if (configured) {
+    return configured.replace(/\/+$/, '');
+  }
+  if (import.meta.env.DEV) {
+    return 'http://127.0.0.1:8000';
+  }
+  return '';
+}
+
+function escapeHtml(text) {
+  return String(text ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function formatBotReply(text) {
+  const safe = escapeHtml(text);
+  return safe
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\n/g, '<br>');
+}
+
 export default function ElephantBot() {
   useEffect(() => {
     // Allow '/' locally and '/LankaStay_PVT_Ltd/' (with or without trailing slash) on GitHub Pages
@@ -18,6 +44,7 @@ export default function ElephantBot() {
     const GRAVITY = 0.8;
     const FLOOR_GAP = 6;
     const DRAG_THRESHOLD = 6;
+    const chatHistory = [];
 
     const SVG =
       '<svg class="el" viewBox="0 0 120 140" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' +
@@ -78,7 +105,7 @@ export default function ElephantBot() {
       '<div class="ebot-msgs" aria-live="polite"></div>' +
       '<div class="ebot-chips"></div>' +
       '<form class="ebot-form" autocomplete="off">' +
-        '<input type="text" placeholder="Ask about Sri Lanka…" aria-label="Your message" maxlength="200">' +
+        '<input type="text" placeholder="Ask anything about Sri Lanka…" aria-label="Your message" maxlength="500">' +
         '<button type="submit" aria-label="Send">➤</button>' +
       '</form>';
 
@@ -332,8 +359,43 @@ export default function ElephantBot() {
       return best;
     };
 
+    const getLocalFallback = (text) => {
+      const topic = findTopic(text);
+      return {
+        html: topic ? topic.answer : (KB.fallback || "Ayubowan! Ask me anything about Sri Lanka travel, weather, or hotels."),
+        plain: topic ? topic.answer.replace(/<[^>]+>/g, " ").trim() : (KB.fallback || "Ayubowan!"),
+        nextChips: topic ? topic.chips : (KB.fallbackChips || KB.startChips || [])
+      };
+    };
+
+    const queryChatApi = async (text) => {
+      const apiBase = getChatApiBase();
+      if (!apiBase) return null;
+
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 15000);
+      try {
+        const res = await fetch(`${apiBase}/api/chat`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            message: text,
+            month: new Date().getMonth() + 1,
+            history: chatHistory.slice(-8)
+          }),
+          signal: controller.signal
+        });
+        if (!res.ok) throw new Error(`Chat API error ${res.status}`);
+        const data = await res.json();
+        if (!data || !data.reply) throw new Error("Empty chat reply");
+        return data.reply;
+      } finally {
+        clearTimeout(timeout);
+      }
+    };
+
     let busy = false;
-    const send = (text) => {
+    const send = async (text) => {
       text = (text || "").trim();
       if (!text || busy) return;
       busy = true;
@@ -342,16 +404,32 @@ export default function ElephantBot() {
       setChips([]);
 
       const typing = addMsg('<span class="ebot-typing"><i></i><i></i><i></i></span>', "bot", true);
-      const topic = findTopic(text);
-      setTimeout(() => {
+      const fallback = getLocalFallback(text);
+
+      try {
+        const apiReply = await queryChatApi(text);
         typing.remove();
-        addMsg(topic ? topic.answer : KB.fallback, "bot", true);
-        setChips(topic ? topic.chips : KB.fallbackChips);
+        if (apiReply) {
+          addMsg(formatBotReply(apiReply), "bot", true);
+          chatHistory.push({ role: "user", content: text }, { role: "assistant", content: apiReply });
+          setChips(fallback.nextChips);
+        } else {
+          addMsg(fallback.html, "bot", true);
+          chatHistory.push({ role: "user", content: text }, { role: "assistant", content: fallback.plain });
+          setChips(fallback.nextChips);
+        }
+      } catch (err) {
+        console.warn("Ayu API fallback used:", err);
+        typing.remove();
+        addMsg(fallback.html, "bot", true);
+        chatHistory.push({ role: "user", content: text }, { role: "assistant", content: fallback.plain });
+        setChips(fallback.nextChips);
+      } finally {
         busy = false;
         root.classList.add("talk");
         clearTimeout(talkTimer);
         talkTimer = setTimeout(() => { root.classList.remove("talk"); }, 520);
-      }, 550 + Math.random() * 400);
+      }
     };
 
     form.addEventListener("submit", (e) => { e.preventDefault(); send(input.value); });

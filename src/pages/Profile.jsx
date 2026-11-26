@@ -1,9 +1,31 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../SupabaseClient';
+import { recordActivity, loadActivity, formatRelativeTime } from '../utils/activityLogger';
 
 const BASE = import.meta.env.BASE_URL;
 const DEFAULT_AVATAR = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200';
+
+function compressAvatarFile(file, size = 120, quality = 0.75) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, size, size);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.onerror = reject;
+      img.src = event.target.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
 
 export default function Profile() {
   const [authUser, setAuthUser] = useState(null);
@@ -11,6 +33,9 @@ export default function Profile() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
   const [authLoading, setAuthLoading] = useState(false);
+  const [updatingAvatar, setUpdatingAvatar] = useState(false);
+  const [customAvatar, setCustomAvatar] = useState('');
+  const [recentActivity, setRecentActivity] = useState([]);
 
   // Newsletter states
   const [subscriberName, setSubscriberName] = useState('');
@@ -40,27 +65,32 @@ export default function Profile() {
     }
   };
 
+  const refreshUserState = async (currentUser) => {
+    setAuthUser(currentUser);
+    if (currentUser) {
+      const savedLocalAvatar = localStorage.getItem(`lankastay_avatar_${currentUser.id}`) || '';
+      setCustomAvatar(currentUser.user_metadata?.avatar_url || savedLocalAvatar);
+      await fetchSavedCount(currentUser.id);
+      const history = await loadActivity(currentUser.id);
+      setRecentActivity(history);
+    } else {
+      setCustomAvatar('');
+      setSavedCount(0);
+      setRecentActivity([]);
+    }
+  };
+
   useEffect(() => {
     let active = true;
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!active) return;
-      const currentUser = session?.user ?? null;
-      setAuthUser(currentUser);
-      if (currentUser) {
-        fetchSavedCount(currentUser.id);
-      }
+      refreshUserState(session?.user ?? null);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!active) return;
-      const currentUser = session?.user ?? null;
-      setAuthUser(currentUser);
-      if (currentUser) {
-        fetchSavedCount(currentUser.id);
-      } else {
-        setSavedCount(0);
-      }
+      refreshUserState(session?.user ?? null);
     });
 
     return () => {
@@ -69,27 +99,52 @@ export default function Profile() {
     };
   }, []);
 
-  // Resize image to small thumbnail so it never bloats Supabase Auth metadata
-  const handleImageChange = (e) => {
-    const file = e.target.files[0];
+  // Sign-up avatar preview handler
+  const handleImageChange = async (e) => {
+    const file = e.target.files?.[0];
     if (!file) return;
+    try {
+      const compressedDataUrl = await compressAvatarFile(file);
+      setFormData((prev) => ({ ...prev, avatar: compressedDataUrl }));
+    } catch (err) {
+      console.error('Image preview error:', err);
+    }
+  };
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        const size = 120;
-        canvas.width = size;
-        canvas.height = size;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, size, size);
-        const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7);
-        setFormData((prev) => ({ ...prev, avatar: compressedDataUrl }));
-      };
-      img.src = event.target.result;
-    };
-    reader.readAsDataURL(file);
+  // Logged-in user profile photo change handler
+  const handleProfilePhotoChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file || !authUser) return;
+
+    setUpdatingAvatar(true);
+    try {
+      const compressedDataUrl = await compressAvatarFile(file, 140, 0.75);
+      setCustomAvatar(compressedDataUrl);
+      localStorage.setItem(`lankastay_avatar_${authUser.id}`, compressedDataUrl);
+
+      const { data, error } = await supabase.auth.updateUser({
+        data: { avatar_url: compressedDataUrl }
+      });
+      if (error) throw error;
+
+      if (data?.user) {
+        setAuthUser(data.user);
+      }
+
+      await recordActivity({
+        action: 'Updated Profile',
+        item: 'Changed profile photo',
+        userId: authUser.id,
+      });
+      const history = await loadActivity(authUser.id);
+      setRecentActivity(history);
+      alert('Profile photo updated!');
+    } catch (err) {
+      alert('Could not update profile photo: ' + (err?.message || err));
+    } finally {
+      setUpdatingAvatar(false);
+      e.target.value = '';
+    }
   };
 
   const handleAuthSubmit = async (e) => {
@@ -119,8 +174,12 @@ export default function Profile() {
         if (error) throw error;
 
         if (data.session?.user) {
-          setAuthUser(data.session.user);
-          await fetchSavedCount(data.session.user.id);
+          await recordActivity({
+            action: 'Account',
+            item: 'Created LankaStay account',
+            userId: data.session.user.id,
+          });
+          await refreshUserState(data.session.user);
           setIsAuthModalOpen(false);
         } else {
           alert('Account created! Please check your email to confirm your account, then sign in.');
@@ -133,8 +192,12 @@ export default function Profile() {
         if (error) throw error;
 
         if (data.session?.user) {
-          setAuthUser(data.session.user);
-          await fetchSavedCount(data.session.user.id);
+          await recordActivity({
+            action: 'Session',
+            item: 'Signed in to LankaStay',
+            userId: data.session.user.id,
+          });
+          await refreshUserState(data.session.user);
         }
         setIsAuthModalOpen(false);
       }
@@ -155,7 +218,9 @@ export default function Profile() {
     } finally {
       localStorage.removeItem('lanka_stay_user');
       setAuthUser(null);
+      setCustomAvatar('');
       setSavedCount(0);
+      setRecentActivity([]);
     }
   };
 
@@ -179,6 +244,14 @@ export default function Profile() {
           alert('Subscription failed: ' + error.message);
         }
       } else {
+        if (authUser) {
+          await recordActivity({
+            action: 'Newsletter',
+            item: 'Subscribed to LankaStay updates',
+            userId: authUser.id,
+          });
+          setRecentActivity(await loadActivity(authUser.id));
+        }
         alert('Successfully subscribed to Lanka Stay!');
         setSubscriberName('');
         setSubscriberEmail('');
@@ -194,19 +267,14 @@ export default function Profile() {
     authUser?.user_metadata?.full_name ||
     authUser?.email?.split('@')[0] ||
     'Traveler';
-  const displayAvatar = authUser?.user_metadata?.avatar_url || DEFAULT_AVATAR;
+  const displayAvatar = customAvatar || authUser?.user_metadata?.avatar_url || DEFAULT_AVATAR;
 
-  const recentActivity = [
-    { action: 'Viewed Place', item: 'Sigiriya Rock Fortress', time: '2 hours ago' },
-    { action: 'Searched', item: 'Galle Dutch Fort Hotel', time: 'Yesterday' },
-    { action: 'Viewed Place', item: 'Ella Nine Arch Bridge', time: '3 days ago' }
-  ];
-
+  // Keys match placesData in PlaceDetail.jsx
   const featuredHighlights = [
-    { title: 'Sigiriya Ancient Fortress', category: 'Heritage', image: `${BASE}images/ssg.jpg` },
-    { title: 'Galle Fort Ramparts', category: 'Coastal', image: `${BASE}images/glft.webp` },
-    { title: 'Ella Nine Arch Bridge', category: 'Mountain', image: `${BASE}images/ellao.avif` },
-    { title: 'Mirissa Beach Resort', category: 'Beach', image: `${BASE}images/miris.jpg` }
+    { placeKey: 'sigiriya', title: 'Sigiriya Ancient Fortress', category: 'Heritage', image: `${BASE}images/ssg.jpg` },
+    { placeKey: 'galle', title: 'Galle Fort Ramparts', category: 'Coastal', image: `${BASE}images/glft.webp` },
+    { placeKey: 'ella', title: 'Ella Nine Arch Bridge', category: 'Mountain', image: `${BASE}images/ellao.avif` },
+    { placeKey: 'mirissa', title: 'Mirissa Beach Resort', category: 'Beach', image: `${BASE}images/miris.jpg` }
   ];
 
   return (
@@ -223,22 +291,48 @@ export default function Profile() {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            borderBottom: '1px solid #e2e8f0'
+            borderBottom: '1px solid #e2e8f0',
+            gap: '12px',
+            flexWrap: 'wrap'
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <img
-              className="avatar"
-              src={displayAvatar}
-              alt="Profile"
-              style={{
-                width: '70px',
-                height: '70px',
-                objectFit: 'cover',
-                borderRadius: '50%',
-                border: '2px solid #D4AF37'
-              }}
-            />
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
+              <img
+                className="avatar"
+                src={displayAvatar}
+                alt="Profile"
+                style={{
+                  width: '70px',
+                  height: '70px',
+                  objectFit: 'cover',
+                  borderRadius: '50%',
+                  border: '2px solid #D4AF37'
+                }}
+              />
+              <label
+                style={{
+                  fontSize: '0.72rem',
+                  fontWeight: '600',
+                  color: '#ffffff',
+                  background: '#f44336',
+                  padding: '3px 8px',
+                  borderRadius: '8px',
+                  cursor: updatingAvatar ? 'not-allowed' : 'pointer',
+                  border: '1px solid #f44336'
+                }}
+              >
+                {updatingAvatar ? 'Saving...' : 'Change Photo'}
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleProfilePhotoChange}
+                  disabled={updatingAvatar}
+                  style={{ display: 'none' }}
+                />
+              </label>
+            </div>
+
             <div>
               <h2 style={{ fontSize: '1.4rem', color: 'black', margin: '0 0 4px 0' }}>{displayName}</h2>
               <p style={{ fontSize: '0.85rem', color: '#64748b', margin: 0 }}>{authUser.email}</p>
@@ -257,6 +351,7 @@ export default function Profile() {
               </span>
             </div>
           </div>
+
           <button
             type="button"
             onClick={handleLogout}
@@ -365,7 +460,7 @@ export default function Profile() {
         <span data-i18n="help_support">Help &amp; AI Support</span>
       </a>
 
-      {/* 3. User Activity & Highlights Section (Shown when Logged In) */}
+      {/* 3. User Activity & Popular Destinations (Shown when Logged In) */}
       {authUser && (
         <div style={{ padding: '0 16px', marginBottom: '30px' }}>
           <section
@@ -380,26 +475,44 @@ export default function Profile() {
             <h3 style={{ fontSize: '1.1rem', marginBottom: '12px', color: '#0f172a' }}>
               Recent Activity History
             </h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              {recentActivity.map((h, idx) => (
-                <div
-                  key={idx}
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    fontSize: '0.85rem',
-                    padding: '8px 10px',
-                    background: '#f8fafc',
-                    border: '1px solid #e2e8f0'
-                  }}
-                >
-                  <span>
-                    <strong>{h.action}:</strong> {h.item}
-                  </span>
-                  <span style={{ color: '#64748b', fontSize: '0.75rem' }}>{h.time}</span>
-                </div>
-              ))}
-            </div>
+            {recentActivity.length === 0 ? (
+              <p style={{ fontSize: '0.85rem', color: '#64748b', margin: 0 }}>
+                No activity yet. Click a destination below to explore and track your visits.
+              </p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {recentActivity.map((h) => (
+                  <div
+                    key={h.id}
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      fontSize: '0.85rem',
+                      padding: '8px 10px',
+                      background: '#f8fafc',
+                      border: '1px solid #e2e8f0'
+                    }}
+                  >
+                    <span>
+                      <strong>{h.action}:</strong>{' '}
+                      {h.place_key ? (
+                        <Link
+                          to={`/place-detail?place=${h.place_key}`}
+                          style={{ color: '#0f172a', fontWeight: '600', textDecoration: 'underline' }}
+                        >
+                          {h.item}
+                        </Link>
+                      ) : (
+                        h.item
+                      )}
+                    </span>
+                    <span style={{ color: '#64748b', fontSize: '0.75rem' }}>
+                      {formatRelativeTime(h.created_at)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
           </section>
 
           <section
@@ -414,20 +527,23 @@ export default function Profile() {
               Popular Destinations ({savedCount} Saved)
             </h3>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px' }}>
-              {featuredHighlights.map((item, idx) => (
-                <div
-                  key={idx}
+              {featuredHighlights.map((item) => (
+                <Link
+                  key={item.placeKey}
+                  to={`/place-detail?place=${item.placeKey}`}
                   style={{
+                    textDecoration: 'none',
                     background: '#f8fafc',
                     border: '1px solid #e2e8f0',
                     borderRadius: '0px',
-                    overflow: 'hidden'
+                    overflow: 'hidden',
+                    display: 'block'
                   }}
                 >
                   <img
                     src={item.image}
                     alt={item.title}
-                    style={{ width: '100%', height: '80px', objectFit: 'cover' }}
+                    style={{ width: '100%', height: '80px', objectFit: 'cover', display: 'block' }}
                   />
                   <div style={{ padding: '8px' }}>
                     <div style={{ fontSize: '0.85rem', fontWeight: '600', color: '#0f172a' }}>
@@ -435,7 +551,7 @@ export default function Profile() {
                     </div>
                     <div style={{ fontSize: '0.7rem', color: '#64748b' }}>{item.category}</div>
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
           </section>
