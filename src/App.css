@@ -5030,15 +5030,7 @@ body.dark-mode,
   transform: scale(1.05);
 }
 
-
-/* =====================================================================
-   LANKA STAY - PREMIUM DARK MODE  (dark mode ONLY)
-   HOW TO USE: delete the old dark-mode block you pasted, then paste this
-   at the VERY BOTTOM of App.css. Light mode is not touched.
-
-   Theme: deep black surfaces + warm GOLD accent (matches your footer
-   logo), colourful category icons, photos stay in full colour.
-   ===================================================================== */
+/* .......................DARK MOOD .................................... */
 
 .app.dark-mode {
   --d-bg: #07090b;
@@ -5082,8 +5074,13 @@ body.dark-mode { background: #000 !important; color: #f3f5f6; }
 .app.dark-mode h3,
 .app.dark-mode h4,
 .app.dark-mode strong,
-.app.dark-mode b { color: #f3f5f6; }
-.app.dark-mode .screen { background: var(--d-bg) !important; }
+.app.dark-mode b {
+   color: #f3f5f6; 
+}
+
+.app.dark-mode .screen {
+   background: var(--d-bg) !important; 
+}
 
 /*  Top utility bar */
 .app.dark-mode .sys-utility-bar {
@@ -5092,6 +5089,7 @@ body.dark-mode { background: #000 !important; color: #f3f5f6; }
   border-bottom: 1px solid var(--d-border) !important;
   box-shadow: 0 4px 18px rgba(0, 0, 0, 0.6) !important;
 }
+
 .app.dark-mode .sys-alert,
 .app.dark-mode .sys-btn,
 .app.dark-mode .sys-select {
@@ -5099,13 +5097,19 @@ body.dark-mode { background: #000 !important; color: #f3f5f6; }
   border-color: rgba(224, 184, 74, 0.35) !important;
   color: var(--d-gold) !important;
 }
+
 .app.dark-mode .sys-btn:hover,
 .app.dark-mode .sys-select:hover {
   background: var(--d-gold) !important;
   color: #14100a !important;
   box-shadow: 0 4px 14px rgba(224, 184, 74, 0.35) !important;
 }
-.app.dark-mode .sys-select select option { background: #0f1316 !important; color: #f3f5f6 !important; }
+
+.app.dark-mode .sys-select select option {
+   background: #0f1316 !important;
+   color: #f3f5f6 !important; 
+}
+
 @supports (appearance: base-select) {
   .app.dark-mode .sys-select select::picker(select) {
     background: #0f1316 !important;
@@ -5119,22 +5123,38 @@ body.dark-mode { background: #000 !important; color: #f3f5f6; }
   .app.dark-mode .sys-select select option::checkmark { color: var(--d-gold) !important; }
 }
 
+
 /* Navigation drawer */
 .app.dark-mode .nav-drawer {
   background-color: #0a0d0f !important;
   border-left: 1px solid var(--d-border) !important;
 }
-.app.dark-mode .nav-drawer .drawer-header { border-bottom-color: var(--d-border) !important; }
+.app.dark-mode .nav-drawer .drawer-header {
+   border-bottom-color: var(--d-border) !important; 
+}
+
 .app.dark-mode .nav-drawer .drawer-header .logo-text h2,
-.app.dark-mode .nav-drawer .close-btn { color: #fff !important; }
-.app.dark-mode .nav-drawer .drawer-section-title { color: var(--d-gold) !important; }
+.app.dark-mode .nav-drawer .close-btn {
+   color: #fff !important; 
+}
+
+.app.dark-mode .nav-drawer .drawer-section-title {
+   color: var(--d-gold) !important; 
+}
+
 .app.dark-mode .nav-drawer .drawer-link {
   color: #dfe5e8 !important;
   border-bottom-color: #1a2025 !important;
 }
+
 .app.dark-mode .nav-drawer .drawer-link:hover,
-.app.dark-mode .nav-drawer .drawer-link.active { color: var(--d-gold) !important; }
-.app.dark-mode .drawer-overlay { background-color: rgba(0, 0, 0, 0.8) !important; }
+.app.dark-mode .nav-drawer .drawer-link.active {
+   color: var(--d-gold) !important; 
+}
+
+.app.dark-mode .drawer-overlay {
+   background-color: rgba(0, 0, 0, 0.8) !important; 
+}
 
 /*  Home hero */
 .app.dark-mode .hero {
@@ -5145,28 +5165,50 @@ body.dark-mode { background: #000 !important; color: #f3f5f6; }
   background-size: cover !important;
   background-position: center !important;
 }
+
 .app.dark-mode .hero h2,
 .app.dark-mode .hero p,
 .app.dark-mode .brand small,
-.app.dark-mode .kicker { color: #fff !important; }
+.app.dark-mode .kicker {
+   color: #fff !important; 
+}
+
 .app.dark-mode .hero h2 span,
-.app.dark-mode .brand h1 span { color: var(--d-gold) !important; }
-.app.dark-mode .logo-icon { color: var(--d-gold) !important; }
-.app.dark-mode .kicker::before { background: var(--d-gold) !important; }
+.app.dark-mode .brand h1 span {
+   color: var(--d-gold) !important; 
+}
+
+.app.dark-mode .logo-icon {
+   color: var(--d-gold) !important; 
+}
+
+.app.dark-mode .kicker::before {
+   background: var(--d-gold) !important;
+}
 
 .app.dark-mode .search-pill {
   background: #12171a !important;
   border: 1px solid var(--d-border-2) !important;
   box-shadow: 0 10px 28px rgba(0, 0, 0, 0.7) !important;
 }
-.app.dark-mode .search-pill > i { color: var(--d-gold); }
-.app.dark-mode .search-pill input { color: #fff !important; background: transparent !important; }
-.app.dark-mode .search-pill input::placeholder { color: var(--d-dim); }
+
+.app.dark-mode .search-pill > i {
+   color: var(--d-gold); 
+}
+.app.dark-mode .search-pill input {
+   color: #fff !important; background: transparent !important; 
+}
+.app.dark-mode .search-pill input::placeholder {
+   color: var(--d-dim); 
+}
+
 .app.dark-mode .search-pill button {
   background: var(--d-gold-grad) !important;
   color: #14100a !important;
 }
-.app.dark-mode .search-pill button:hover { filter: brightness(1.1); transform: translateY(-2px); }
+.app.dark-mode .search-pill button:hover {
+   filter: brightness(1.1); transform: translateY(-2px); 
+}
 
 /* Category shortcuts */
 .app.dark-mode .categories {
@@ -5175,17 +5217,44 @@ body.dark-mode { background: #000 !important; color: #f3f5f6; }
   box-shadow: var(--d-shadow) !important;
   color: #fff !important;
 }
-.app.dark-mode .categories a { color: #dfe5e8; }
-.app.dark-mode .box { color: #fff !important; box-shadow: 0 6px 14px rgba(0, 0, 0, 0.45); }
-.app.dark-mode .box.green  { background: linear-gradient(135deg, #20c98a, #0d8a5b) !important; }
-.app.dark-mode .box.blue   { background: linear-gradient(135deg, #38a8ff, #1e63d6) !important; }
-.app.dark-mode .box.orange { background: linear-gradient(135deg, #ffb347, #e8741a) !important; }
-.app.dark-mode .box.purple { background: linear-gradient(135deg, #a77bff, #6a3fd6) !important; }
-.app.dark-mode .box.leaf   { background: linear-gradient(135deg, #ff6b9a, #d6336c) !important; }
-.app.dark-mode .box:hover { transform: translateY(-3px); filter: brightness(1.1); }
+.app.dark-mode .categories a {
+   color: #dfe5e8; 
+}
 
-.app.dark-mode .section-title h3 { color: #fff !important; }
-.app.dark-mode .section-title a { color: var(--d-gold) !important; }
+.app.dark-mode .box {
+   color: #fff !important; box-shadow: 0 6px 14px rgba(0, 0, 0, 0.45); 
+}
+
+.app.dark-mode .box.green  {
+   background: linear-gradient(135deg, #20c98a, #0d8a5b) !important; 
+}
+
+.app.dark-mode .box.blue   { 
+  background: linear-gradient(135deg, #38a8ff, #1e63d6) !important; 
+}
+
+.app.dark-mode .box.orange { 
+  background: linear-gradient(135deg, #ffb347, #e8741a) !important; 
+}
+.app.dark-mode .box.purple {
+   background: linear-gradient(135deg, #a77bff, #6a3fd6) !important; 
+}
+
+.app.dark-mode .box.leaf   {
+   background: linear-gradient(135deg, #ff6b9a, #d6336c) !important; 
+}
+
+.app.dark-mode .box:hover {
+   transform: translateY(-3px); filter: brightness(1.1); 
+}
+
+.app.dark-mode .section-title h3 {
+   color: #fff !important; 
+}
+
+.app.dark-mode .section-title a {
+   color: var(--d-gold) !important; 
+}
 
 /*  ALL main buttons: gold  */
 .app.dark-mode .ai-action-btn,
@@ -5213,9 +5282,12 @@ body.dark-mode { background: #000 !important; color: #f3f5f6; }
   background: var(--d-gold-grad) !important;
   box-shadow: 0 10px 24px rgba(224, 184, 74, 0.38) !important;
 }
+
 .app.dark-mode .ai-action-btn i,
 .app.dark-mode .elephant-action-btn i,
-.app.dark-mode .show-more-mini-btn i { color: #14100a !important; }
+.app.dark-mode .show-more-mini-btn i {
+   color: #14100a !important; 
+}
 
 /* Round arrow buttons  */
 .app.dark-mode .icf-slider-btn,
@@ -5225,6 +5297,7 @@ body.dark-mode { background: #000 !important; color: #f3f5f6; }
   border: 1px solid rgba(224, 184, 74, 0.5) !important;
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.6) !important;
 }
+
 .app.dark-mode .icf-slider-btn:hover,
 .app.dark-mode .gallery-section .nav-arrow:hover {
   background: var(--d-gold) !important;
@@ -5239,25 +5312,45 @@ body.dark-mode { background: #000 !important; color: #f3f5f6; }
   border: 1px solid var(--d-border) !important;
   box-shadow: var(--d-shadow) !important;
 }
+
 .app.dark-mode .weather-compact-card h4,
 .app.dark-mode .weather-compact-card #current-temp,
-.app.dark-mode .weather-compact-card .temp-row span { color: #fff !important; }
-.app.dark-mode .weather-compact-card #weather-desc { color: var(--d-muted) !important; }
-.app.dark-mode .weather-mini-icon { color: var(--d-gold) !important; }
-.app.dark-mode .weather-divider { background: var(--d-border) !important; }
+.app.dark-mode .weather-compact-card .temp-row span {
+  color: #fff !important; 
+}
+
+.app.dark-mode .weather-compact-card #weather-desc {
+  color: var(--d-muted) !important; 
+}
+
+.app.dark-mode .weather-mini-icon {
+  color: var(--d-gold) !important; 
+}
+
+.app.dark-mode .weather-divider { 
+  background: var(--d-border) !important; 
+}
 .app.dark-mode .pill {
   background: var(--d-surface-2) !important;
   color: #e8ecee !important;
   border: 1px solid var(--d-border) !important;
 }
-.app.dark-mode .pill strong { color: var(--d-gold) !important; }
-.app.dark-mode .weather-modal { background: rgba(0, 0, 0, 0.85) !important; }
+
+.app.dark-mode .pill strong { 
+  color: var(--d-gold) !important; 
+}
+
+.app.dark-mode .weather-modal { 
+  background: rgba(0, 0, 0, 0.85) !important; 
+}
+
 .app.dark-mode .modal-content {
   background: var(--d-surface) !important;
   color: #fff !important;
   border: 1px solid var(--d-border-2) !important;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8) !important;
 }
+
 .app.dark-mode .modal-content h2 { color: #fff !important; }
 .app.dark-mode .modal-content p { color: var(--d-muted) !important; }
 .app.dark-mode .close-btn { color: #fff !important; }
@@ -5267,14 +5360,24 @@ body.dark-mode { background: #000 !important; color: #f3f5f6; }
   color: #e8ecee !important;
   border: 1px solid var(--d-border) !important;
 }
+
 .app.dark-mode .chart-container {
   background: var(--d-surface-2) !important;
   border: 1px solid var(--d-border) !important;
 }
+
 .app.dark-mode .chart-title,
-.app.dark-mode .bar-label { color: var(--d-muted) !important; }
-.app.dark-mode .bar-graph { border-bottom-color: var(--d-border-2) !important; }
-.app.dark-mode .bar { background: linear-gradient(to top, #c99a2e, #f6d77a) !important; }
+.app.dark-mode .bar-label { 
+  color: var(--d-muted) !important; 
+}
+
+.app.dark-mode .bar-graph { 
+  border-bottom-color: var(--d-border-2) !important; 
+}
+
+.app.dark-mode .bar { 
+  background: linear-gradient(to top, #c99a2e, #f6d77a) !important; 
+}
 
 /* - AI banner  */
 .app.dark-mode .ai-fullwidth-banner {
@@ -5283,8 +5386,15 @@ body.dark-mode { background: #000 !important; color: #f3f5f6; }
   color: var(--d-muted) !important;
   box-shadow: var(--d-shadow);
 }
-.app.dark-mode .ai-title { color: var(--d-gold) !important; }
-.app.dark-mode .ai-subtitle { color: var(--d-muted) !important; }
+
+.app.dark-mode .ai-title { 
+  color: var(--d-gold) !important; 
+}
+
+.app.dark-mode .ai-subtitle { 
+  color: var(--d-muted) !important; 
+}
+
 .app.dark-mode .ai-chip-icon {
   background: var(--d-gold-grad) !important;
   color: #14100a !important;
@@ -5292,26 +5402,61 @@ body.dark-mode { background: #000 !important; color: #f3f5f6; }
 }
 
 /* Explore carousel  */
-.app.dark-mode .icf-wrapper { background: var(--d-bg) !important; color: #fff !important; }
-.app.dark-mode .icf-section-title { color: #fff !important; }
-.app.dark-mode .icf-destination-card { background: #000 !important; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.7) !important; border: 1px solid var(--d-border); }
-.app.dark-mode .icf-card-overlay { background: linear-gradient(to top, rgba(0, 0, 0, .88), transparent) !important; }
+.app.dark-mode .icf-wrapper { 
+  background: var(--d-bg) !important; 
+  color: #fff !important; 
+}
+
+.app.dark-mode .icf-section-title { 
+  color: #fff !important; 
+}
+
+.app.dark-mode .icf-destination-card { 
+  background: #000 !important; 
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.7) !important; 
+  border: 1px solid var(--d-border); 
+}
+
+.app.dark-mode .icf-card-overlay { 
+  background: linear-gradient(to top, rgba(0, 0, 0, .88), transparent) !important; 
+}
 
 /*  Sponsors ticker */
 .app.dark-mode .icf-airlines-section h2,
-.app.dark-mode .partner-text h2 { color: #fff !important; }
+.app.dark-mode .partner-text h2 { 
+  color: #fff !important; 
+}
+
 .app.dark-mode .icf-airline-item {
   background: var(--d-surface) !important;
   border-color: var(--d-border) !important;
 }
-.app.dark-mode .icf-airline-code { background: var(--d-gold-soft) !important; color: var(--d-gold) !important; }
-.app.dark-mode .icf-airline-name { color: #fff !important; }
-.app.dark-mode .icf-airline-hub { color: var(--d-muted) !important; }
+.app.dark-mode .icf-airline-code { 
+  background: var(--d-gold-soft) !important; 
+  color: var(--d-gold) !important; 
+}
+
+.app.dark-mode .icf-airline-name { 
+  color: #fff !important; 
+}
+
+.app.dark-mode .icf-airline-hub { 
+  color: var(--d-muted) !important; 
+}
 
 /*3D gallery */
-.app.dark-mode .gallery-section .header-text h2 { color: rgba(224, 184, 74, 0.16) !important; }
-.app.dark-mode .gallery-section .card { box-shadow: 0 12px 28px rgba(0, 0, 0, 0.8) !important; border: 1px solid var(--d-border); }
-.app.dark-mode .gallery-section .member-name { color: #fff !important; }
+.app.dark-mode .gallery-section .header-text h2 { 
+  color: rgba(224, 184, 74, 0.16) !important; 
+}
+
+.app.dark-mode .gallery-section .card { 
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.8) !important; border: 1px solid var(--d-border); 
+}
+
+.app.dark-mode .gallery-section .member-name { 
+  color: #fff !important; 
+}
+
 .app.dark-mode .gallery-section .member-role { color: var(--d-gold) !important; }
 .app.dark-mode .gallery-section .dot { background: #343d45 !important; }
 .app.dark-mode .gallery-section .dot.active { background: var(--d-gold) !important; }
@@ -5840,3 +5985,267 @@ body.dark-mode { background: #000 !important; color: #f3f5f6; }
 .app.dark-mode a:focus-visible,
 .app.dark-mode button:focus-visible { outline: 2px solid var(--d-gold); outline-offset: 2px; }
 .app.dark-mode img { filter: brightness(0.95) contrast(1.03); }
+
+.app.dark-mode .dest-main-title span[data-i18n="discover_the_beauty_of"],
+.app.dark-mode .dest-main-title > span:first-child { color: #ffffff !important; }
+
+
+/* ---- backgrounds ---- */
+.app.dark-mode main.screen [style*="background: rgb(255, 255, 255)"] {
+  background: var(--d-surface) !important;
+}
+.app.dark-mode main.screen [style*="background: rgb(248, 250, 252)"],
+.app.dark-mode main.screen [style*="background: rgb(248, 249, 250)"],
+.app.dark-mode main.screen [style*="background: rgb(241, 243, 245)"] {
+  background: var(--d-surface-2) !important;
+}
+
+/* outer hotel card gets a subtle edge so it separates from the page */
+.app.dark-mode main.screen div[style*="background: rgb(255, 255, 255)"][style*="overflow: hidden"] {
+  outline: 1px solid var(--d-border);
+  outline-offset: -1px;
+}
+
+/* ---- borders ---- */
+.app.dark-mode main.screen [style*="solid rgb(226, 232, 240)"],
+.app.dark-mode main.screen [style*="solid rgb(221, 221, 221)"],
+.app.dark-mode main.screen [style*="solid rgb(238, 238, 238)"],
+.app.dark-mode main.screen [style*="solid rgb(255, 255, 255)"] {
+  border-color: var(--d-border) !important;
+}
+.app.dark-mode main.screen [style*="solid rgb(204, 204, 204)"],
+.app.dark-mode main.screen [style*="solid rgb(203, 213, 225)"] {
+  border-color: var(--d-border-2) !important;
+}
+
+.app.dark-mode main.screen [style*="solid rgb(29, 107, 79)"] {
+  border-color: var(--d-gold) !important;
+}
+
+/* ---- text colours ---- */
+.app.dark-mode main.screen [style*="color: rgb(15, 23, 42)"],
+.app.dark-mode main.screen [style*="color: rgb(31, 41, 55)"],
+.app.dark-mode main.screen [style*="color: black"] { color: #ffffff !important; }
+
+.app.dark-mode main.screen [style*="color: rgb(30, 41, 59)"] { color: #e8ecee !important; }
+.app.dark-mode main.screen [style*="color: rgb(51, 65, 85)"],
+.app.dark-mode main.screen [style*="color: rgb(75, 85, 99)"] { color: #cfd6da !important; }
+
+.app.dark-mode main.screen [style*="color: rgb(100, 116, 139)"],
+.app.dark-mode main.screen [style*="color: rgb(85, 85, 85)"],
+.app.dark-mode main.screen [style*="color: rgb(107, 114, 128)"] { color: var(--d-muted) !important; }
+.app.dark-mode main.screen [style*="color: rgb(136, 136, 136)"] { color: var(--d-dim) !important; }
+
+/* old green text -> emerald */
+.app.dark-mode main.screen [style*="color: rgb(29, 107, 79)"] { color: var(--d-emerald) !important; }
+
+/* icons that were navy/dark -> gold */
+.app.dark-mode main.screen i[style*="color: rgb(15, 23, 42)"] { color: var(--d-gold) !important; }
+
+/* ---- main action buttons / links that had a navy or dark-green background -> GOLD ---- */
+.app.dark-mode main.screen a[style*="background: rgb(15, 23, 42)"],
+.app.dark-mode main.screen button[style*="background: rgb(15, 23, 42)"],
+.app.dark-mode main.screen button[style*="background: rgb(9, 65, 44)"],
+.app.dark-mode main.screen button[style*="background: rgb(244, 67, 54)"],
+.app.dark-mode main.screen label[style*="background: rgb(244, 67, 54)"] {
+  background: var(--d-gold-grad) !important;
+  color: #14100a !important;
+  border-color: transparent !important;
+  font-weight: 800 !important;
+  box-shadow: 0 6px 18px rgba(224, 184, 74, 0.28) !important;
+}
+.app.dark-mode main.screen a[style*="background: rgb(15, 23, 42)"] i,
+.app.dark-mode main.screen button[style*="background: rgb(15, 23, 42)"] i,
+.app.dark-mode main.screen button[style*="background: rgb(244, 67, 54)"] i { color: #14100a !important; }
+.app.dark-mode main.screen a[style*="background: rgb(15, 23, 42)"]:hover,
+.app.dark-mode main.screen button[style*="background: rgb(15, 23, 42)"]:hover,
+.app.dark-mode main.screen button[style*="background: rgb(9, 65, 44)"]:hover,
+.app.dark-mode main.screen button[style*="background: rgb(244, 67, 54)"]:hover {
+  filter: brightness(1.1);
+  transform: translateY(-2px);
+}
+
+/* ---- form controls with inline borders (booking form, month picker, sign-in modal) ---- */
+.app.dark-mode main.screen :is(input, select, textarea)[style*="border"] {
+  background: var(--d-surface-2) !important;
+  color: #ffffff !important;
+  border-color: var(--d-border-2) !important;
+}
+.app.dark-mode main.screen :is(input, select, textarea)[style*="border"]:focus {
+  outline: none;
+  border-color: var(--d-gold) !important;
+  box-shadow: 0 0 0 3px rgba(224, 184, 74, 0.15);
+}
+.app.dark-mode main.screen :is(input, textarea)[style*="border"]::placeholder { color: var(--d-dim); }
+.app.dark-mode main.screen select option { background: #0f1316; color: #ffffff; }
+.app.dark-mode main.screen input[type="file"] { color: var(--d-muted); background: transparent !important; border: 0 !important; }
+
+
+/* travel-month bar + select */
+.app.dark-mode main.screen select[style*="background: rgb(29, 107, 79)"] {
+  background: var(--d-surface-3) !important;
+  color: var(--d-gold) !important;
+  border-color: var(--d-gold) !important;
+}
+.app.dark-mode main.screen label[style*="font-size: 13px"] i { color: var(--d-gold) !important; }
+
+/* monsoon note + engine label */
+.app.dark-mode main.screen p[style*="color: rgb(29, 107, 79)"] { color: var(--d-gold) !important; }
+
+/* monsoon warning (red box) */
+.app.dark-mode main.screen div[style*="background: rgb(254, 242, 242)"] {
+  background: rgba(255, 93, 93, 0.1) !important;
+  color: #ffb4b4 !important;
+  border-left-color: var(--d-red) !important;
+}
+.app.dark-mode main.screen div[style*="background: rgb(254, 242, 242)"] i { color: var(--d-red) !important; }
+
+/* special-rates box */
+.app.dark-mode main.screen div[style*="background: rgb(248, 249, 250)"] h3 { color: #ffffff !important; }
+.app.dark-mode main.screen div[style*="background: rgb(248, 249, 250)"] b { color: var(--d-gold) !important; }
+
+/* "20% OFF" badge (also used in Hotels list) */
+.app.dark-mode main.screen span[style*="background: rgb(226, 246, 237)"] {
+  background: rgba(47, 208, 138, 0.16) !important;
+  color: var(--d-emerald) !important;
+}
+
+/* booking form heading underline */
+.app.dark-mode main.screen form h3[style*="border-bottom"] { border-bottom-color: var(--d-border-2) !important; color: #fff !important; }
+.app.dark-mode main.screen form label { color: #e8ecee !important; }
+
+/* thumbnails */
+.app.dark-mode main.screen img[alt^="Thumb"] { opacity: 0.8; transition: opacity .2s, transform .2s; }
+.app.dark-mode main.screen img[alt^="Thumb"]:hover { opacity: 1; transform: translateY(-2px); }
+.app.dark-mode main.screen img[alt^="Thumb"][style*="3px solid"] { opacity: 1; }
+
+.app.dark-mode main.place-detail-box-page { background: var(--d-bg) !important; }
+
+/* hero: keep the photo in colour, darker bottom so the text is readable */
+.app.dark-mode main.place-detail-box-page .loc-hero-overlay {
+  background: linear-gradient(to top, rgba(7, 9, 11, 0.95) 0%, rgba(7, 9, 11, 0.35) 55%, rgba(0, 0, 0, 0.25) 100%) !important;
+}
+
+/* section cards */
+.app.dark-mode main.place-detail-box-page .loc-section {
+  background: var(--d-surface) !important;
+  border: 1px solid var(--d-border) !important;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.5) !important;
+}
+.app.dark-mode main.place-detail-box-page .loc-section-title { color: #ffffff !important; }
+.app.dark-mode main.place-detail-box-page .loc-section p { color: #cfd6da !important; }
+
+/* key highlights tiles / things-to-do rows / quick info boxes / other-destination cards */
+.app.dark-mode main.place-detail-box-page [style*="background: rgb(248, 250, 252)"] {
+  background: var(--d-surface-2) !important;
+  border-color: var(--d-border-2) !important;
+}
+.app.dark-mode main.place-detail-box-page [style*="background: rgb(248, 250, 252)"]:is(a):hover {
+  border-color: rgba(224, 184, 74, 0.6) !important;
+  transform: translateY(-3px);
+  transition: transform .2s, border-color .2s;
+}
+.app.dark-mode main.place-detail-box-page li[style*="background: rgb(248, 250, 252)"] i,
+.app.dark-mode main.place-detail-box-page li i.fa-compass { color: var(--d-gold) !important; }
+
+/* Quick information labels */
+.app.dark-mode main.place-detail-box-page span[style*="color: rgb(100, 116, 139)"] { color: var(--d-dim) !important; }
+.app.dark-mode main.place-detail-box-page strong[style*="color: rgb(15, 23, 42)"] { color: #ffffff !important; }
+
+/* gallery tiles */
+.app.dark-mode main.place-detail-box-page .gallery-grid > div {
+  border-color: var(--d-border-2) !important;
+  transition: transform .2s, border-color .2s;
+}
+.app.dark-mode main.place-detail-box-page .gallery-grid > div:hover {
+  border-color: var(--d-gold) !important;
+  transform: scale(1.02);
+}
+
+/* embedded Google map -> dark map look */
+.app.dark-mode main.place-detail-box-page iframe {
+  filter: invert(92%) hue-rotate(180deg) brightness(0.95) contrast(0.9);
+}
+.app.dark-mode main.place-detail-box-page div[style*="overflow: hidden"][style*="height: 220px"] {
+  border-color: var(--d-border-2) !important;
+}
+
+/* "Open in Google Maps" + "Plan My Trip" (gold - handled above) - keep the pin icon dark */
+.app.dark-mode main.place-detail-box-page a[style*="background: rgb(15, 23, 42)"] i { color: #14100a !important; }
+
+
+/* signed-in header */
+.app.dark-mode main.screen section.me[style] {
+  background: linear-gradient(160deg, #141a1e 0%, #0b0f12 100%) !important;
+  border-bottom: 1px solid var(--d-border) !important;
+}
+.app.dark-mode main.screen section.me h2 { color: #ffffff !important; }
+.app.dark-mode main.screen section.me p { color: var(--d-muted) !important; }
+.app.dark-mode main.screen section.me img.avatar { border-color: var(--d-gold) !important; box-shadow: 0 0 0 4px rgba(224, 184, 74, 0.15); }
+
+/* "Verified Traveler" badge */
+.app.dark-mode main.screen span[style*="background: rgb(226, 232, 240)"] {
+  background: var(--d-gold-soft) !important;
+  color: var(--d-gold) !important;
+  border: 1px solid rgba(224, 184, 74, 0.35);
+}
+
+/* logout button */
+.app.dark-mode main.screen button[style*="background: rgb(239, 68, 68)"] {
+  background: rgba(255, 93, 93, 0.14) !important;
+  color: #ff8a8a !important;
+  border: 1px solid rgba(255, 93, 93, 0.5) !important;
+}
+.app.dark-mode main.screen button[style*="background: rgb(239, 68, 68)"]:hover {
+  background: var(--d-red) !important;
+  color: #14100a !important;
+}
+
+/* guest banner (was solid black) */
+.app.dark-mode main.screen section[style*="background: black"] {
+  background: linear-gradient(160deg, #161b1f 0%, #07090b 100%) !important;
+  border: 1px solid rgba(224, 184, 74, 0.3) !important;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.7);
+}
+.app.dark-mode main.screen section[style*="background: black"] h2 { color: #ffffff !important; }
+.app.dark-mode main.screen section[style*="background: black"] p { color: var(--d-muted) !important; }
+.app.dark-mode main.screen section[style*="background: black"] button {
+  background: var(--d-gold-grad) !important;
+  color: #14100a !important;
+  box-shadow: 0 8px 22px rgba(224, 184, 74, 0.35);
+}
+
+/* activity history + popular destinations cards */
+.app.dark-mode main.screen section[style*="background: rgb(255, 255, 255)"] {
+  background: var(--d-surface) !important;
+  border: 1px solid var(--d-border) !important;
+}
+.app.dark-mode main.screen section[style*="background: rgb(255, 255, 255)"] h3 { color: #ffffff !important; }
+.app.dark-mode main.screen section[style*="background: rgb(255, 255, 255)"] p { color: var(--d-muted) !important; }
+.app.dark-mode main.screen section[style*="background: rgb(255, 255, 255)"] strong { color: #ffffff !important; }
+.app.dark-mode main.screen a[style*="text-decoration: underline"] { color: var(--d-gold) !important; }
+
+.app.dark-mode main.screen a[style*="background: rgb(248, 250, 252)"]:hover {
+  border-color: rgba(224, 184, 74, 0.6) !important;
+}
+
+/* sign-in / register popup */
+.app.dark-mode main.screen div[style*="position: fixed"][style*="rgba(0, 0, 0, 0.75)"] {
+  background: rgba(0, 0, 0, 0.85) !important;
+  backdrop-filter: blur(6px);
+}
+.app.dark-mode main.screen div[style*="max-width: 400px"] {
+  background: var(--d-surface) !important;
+  border: 1px solid var(--d-border-2);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.85) !important;
+}
+.app.dark-mode main.screen div[style*="max-width: 400px"] > span { color: #ffffff !important; }
+.app.dark-mode main.screen div[style*="max-width: 400px"] > span:hover { color: var(--d-gold) !important; }
+.app.dark-mode main.screen div[style*="max-width: 400px"] h3 { color: #ffffff !important; }
+.app.dark-mode main.screen div[style*="max-width: 400px"] label { color: #e8ecee !important; }
+.app.dark-mode main.screen div[style*="max-width: 400px"] img { border-color: var(--d-gold) !important; }
+.app.dark-mode main.screen button[style*="background: transparent"][style*="rgb(29, 107, 79)"] {
+  color: var(--d-gold) !important;
+  text-decoration: underline;
+}
+.app.dark-mode main.screen button[type="submit"]:disabled { opacity: 0.6; cursor: not-allowed; }
