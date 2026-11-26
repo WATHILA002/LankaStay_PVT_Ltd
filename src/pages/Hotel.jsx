@@ -336,10 +336,10 @@ export default function Hotel() {
             style={{
               padding: '6px 10px',
               borderRadius: '8px',
-              border: '1px solid #cbd5e1',
+              border: '1px solid #1d6b4f',
               fontSize: '13px',
-              background: '#fff',
-              color: '#111'
+              background: '#1d6b4f',
+              color: '#ffffff'
             }}
           >
             {MONTHS.map((m, i) => (

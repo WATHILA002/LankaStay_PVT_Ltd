@@ -435,9 +435,9 @@ export default function HotelDetail() {
                 alignItems: 'center',
                 gap: '10px',
                 flexWrap: 'wrap',
-                background: '#f8faf9',
+                background: '#ffffff',
                 padding: '10px 12px',
-                border: '1px solid #e2e8e5',
+                border: '1px solid #ffffff',
                 marginBottom: '14px'
               }}
             >
@@ -452,9 +452,10 @@ export default function HotelDetail() {
                 style={{
                   padding: '6px 10px',
                   borderRadius: '8px',
-                  border: '1px solid #cbd5e1',
+                  border: '1px solid #1d6b4f',
                   fontSize: '13px',
-                  background: '#fff',
+                  color: '#ffffff',
+                  background: '#1d6b4f',
                   fontWeight: '600'
                 }}
               >
