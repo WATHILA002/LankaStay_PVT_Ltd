@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { GoogleGenAI } from '@google/genai';
 import '../utils/knowledge.js';
 import { assetUrl } from '../utils/assetUrl';
 
@@ -19,13 +20,22 @@ export default function ElephantBot() {
     const FLOOR_GAP = 6;
     const DRAG_THRESHOLD = 6;
 
-    const API_BASE_URL =
-      (typeof import.meta !== 'undefined' &&
-        import.meta.env &&
-        import.meta.env.VITE_API_URL) ||
-      'http://127.0.0.1:8000';
+    const env = (typeof import.meta !== 'undefined' && import.meta.env) || {};
+    const API_BASE_URL = (env.VITE_API_URL || '').trim();
+    const GEMINI_API_KEY = (env.VITE_GEMINI_API_KEY || '').trim();
+    const isLocalHost =
+      window.location.hostname === 'localhost' ||
+      window.location.hostname === '127.0.0.1';
+    const backendUrl = API_BASE_URL || (isLocalHost ? 'http://127.0.0.1:8000' : '');
+    const geminiClient = GEMINI_API_KEY ? new GoogleGenAI({ apiKey: GEMINI_API_KEY }) : null;
+
     const REQUEST_TIMEOUT_MS = 45000;
     const chatHistory = [];
+
+    const AYU_SYSTEM_PROMPT =
+      'You are Ayu, the friendly elephant-themed travel assistant for LankaStay (Lanka Stay / LankaGo (Pvt) Ltd) in Sri Lanka. ' +
+      'Help travelers with Sri Lanka destinations, monsoon and seasonal weather advice, hotels, routes, packing, culture, and trip planning. ' +
+      'Keep answers clear, helpful, and concise. Match the user\'s language (English, Sinhala, or Tamil) when appropriate.';
 
     const SVG =
       '<svg class="el" viewBox="0 0 120 140" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' +
@@ -349,6 +359,58 @@ export default function ElephantBot() {
           content: m.content.trim(),
         }));
 
+    const callBackendChat = async (text, historyPayload) => {
+      if (!backendUrl) {
+        throw new Error('No backend URL configured');
+      }
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+      try {
+        const res = await fetch(`${backendUrl}/api/chat`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            message: text,
+            history: historyPayload,
+          }),
+          signal: controller.signal,
+        });
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}`);
+        }
+        const data = await res.json();
+        const replyText = (data && data.reply ? String(data.reply) : '').trim();
+        if (!replyText) {
+          throw new Error('Empty reply from /api/chat');
+        }
+        return replyText;
+      } finally {
+        clearTimeout(timeoutId);
+      }
+    };
+
+    const callDirectGemini = async (historyPayload) => {
+      if (!geminiClient) {
+        throw new Error('Missing VITE_GEMINI_API_KEY');
+      }
+      const contents = historyPayload.map((m) => ({
+        role: m.role === 'assistant' ? 'model' : 'user',
+        parts: [{ text: m.content }],
+      }));
+      const response = await geminiClient.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents,
+        config: {
+          systemInstruction: AYU_SYSTEM_PROMPT,
+        },
+      });
+      const replyText = (response && response.text ? String(response.text) : '').trim();
+      if (!replyText) {
+        throw new Error('Empty reply from Gemini');
+      }
+      return replyText;
+    };
+
     let busy = false;
     const send = async (text) => {
       text = (text || '').trim();
@@ -360,8 +422,7 @@ export default function ElephantBot() {
       setChips([]);
 
       const typing = addMsg('<span class="ebot-typing"><i></i><i></i><i></i></span>', 'bot', true);
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+      const historyPayload = toBackendHistory();
 
       const applyFallback = () => {
         const topic = findTopic(text);
@@ -375,24 +436,21 @@ export default function ElephantBot() {
       };
 
       try {
-        const res = await fetch(`${API_BASE_URL}/api/chat`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            message: text,
-            history: toBackendHistory(),
-          }),
-          signal: controller.signal,
-        });
-
-        if (!res.ok) {
-          throw new Error(`HTTP ${res.status}`);
-        }
-
-        const data = await res.json();
-        const replyText = (data && data.reply ? String(data.reply) : '').trim();
-        if (!replyText) {
-          throw new Error('Empty reply from /api/chat');
+        let replyText = '';
+        if (isLocalHost || API_BASE_URL) {
+          try {
+            replyText = await callBackendChat(text, historyPayload);
+          } catch (backendErr) {
+            if (geminiClient) {
+              replyText = await callDirectGemini(historyPayload);
+            } else {
+              throw backendErr;
+            }
+          }
+        } else if (geminiClient) {
+          replyText = await callDirectGemini(historyPayload);
+        } else {
+          throw new Error('No AI source available');
         }
 
         typing.remove();
@@ -403,7 +461,6 @@ export default function ElephantBot() {
         typing.remove();
         applyFallback();
       } finally {
-        clearTimeout(timeoutId);
         busy = false;
         root.classList.add('talk');
         clearTimeout(talkTimer);
