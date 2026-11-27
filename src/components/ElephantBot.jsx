@@ -2,32 +2,6 @@ import { useEffect } from 'react';
 import '../utils/knowledge.js';
 import { assetUrl } from '../utils/assetUrl';
 
-function getChatApiBase() {
-  const configured = (import.meta.env.VITE_MONSOON_API_URL || '').trim();
-  if (configured) {
-    return configured.replace(/\/+$/, '');
-  }
-  if (import.meta.env.DEV) {
-    return 'http://127.0.0.1:8000';
-  }
-  return '';
-}
-
-function escapeHtml(text) {
-  return String(text ?? '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
-
-function formatBotReply(text) {
-  const safe = escapeHtml(text);
-  return safe
-    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-    .replace(/\n/g, '<br>');
-}
-
 export default function ElephantBot() {
   useEffect(() => {
     // Allow '/' locally and '/LankaStay_PVT_Ltd/' (with or without trailing slash) on GitHub Pages
@@ -44,6 +18,13 @@ export default function ElephantBot() {
     const GRAVITY = 0.8;
     const FLOOR_GAP = 6;
     const DRAG_THRESHOLD = 6;
+
+    const API_BASE_URL =
+      (typeof import.meta !== 'undefined' &&
+        import.meta.env &&
+        import.meta.env.VITE_API_URL) ||
+      'http://127.0.0.1:8000';
+    const REQUEST_TIMEOUT_MS = 45000;
     const chatHistory = [];
 
     const SVG =
@@ -82,10 +63,10 @@ export default function ElephantBot() {
       '<path d="M57 70 q3 1 6 0 M57 78 q3 1 6 0" stroke="#8fa6cb" stroke-width="1.6" stroke-linecap="round" fill="none"/></g>' +
       '</g></svg>';
 
-    const root = document.createElement("div");
-    root.className = "ebot air";
-    root.setAttribute("role", "button");
-    root.setAttribute("aria-label", "Open Sri Lanka chat with Ayu the elephant");
+    const root = document.createElement('div');
+    root.className = 'ebot air';
+    root.setAttribute('role', 'button');
+    root.setAttribute('aria-label', 'Open Sri Lanka chat with Ayu the elephant');
     root.tabIndex = 0;
     root.innerHTML =
       '<div class="ebot-bubble"></div>' +
@@ -93,9 +74,9 @@ export default function ElephantBot() {
       '<div class="ebot-sprite is-fall">' + SVG + '</div>' +
       '<div class="ebot-shadow"></div>';
 
-    const panel = document.createElement("section");
-    panel.className = "ebot-panel";
-    panel.setAttribute("aria-label", "Sri Lanka chat");
+    const panel = document.createElement('section');
+    panel.className = 'ebot-panel';
+    panel.setAttribute('aria-label', 'Sri Lanka chat');
     panel.innerHTML =
       '<header class="ebot-head">' +
         '<div class="ebot-avatar">🐘</div>' +
@@ -105,7 +86,7 @@ export default function ElephantBot() {
       '<div class="ebot-msgs" aria-live="polite"></div>' +
       '<div class="ebot-chips"></div>' +
       '<form class="ebot-form" autocomplete="off">' +
-        '<input type="text" placeholder="Ask anything about Sri Lanka…" aria-label="Your message" maxlength="500">' +
+        '<input type="text" placeholder="Ask about Sri Lanka…" aria-label="Your message" maxlength="200">' +
         '<button type="submit" aria-label="Send">➤</button>' +
       '</form>';
 
@@ -113,12 +94,12 @@ export default function ElephantBot() {
     appContainer.appendChild(root);
     appContainer.appendChild(panel);
 
-    const sprite = root.querySelector(".ebot-sprite");
-    const bubble = root.querySelector(".ebot-bubble");
-    const msgs = panel.querySelector(".ebot-msgs");
-    const chips = panel.querySelector(".ebot-chips");
-    const form = panel.querySelector(".ebot-form");
-    const input = form.querySelector("input");
+    const sprite = root.querySelector('.ebot-sprite');
+    const bubble = root.querySelector('.ebot-bubble');
+    const msgs = panel.querySelector('.ebot-msgs');
+    const chips = panel.querySelector('.ebot-chips');
+    const form = panel.querySelector('.ebot-form');
+    const input = form.querySelector('input');
 
     let W = root.offsetWidth || 90;
     let H = root.offsetHeight || 110;
@@ -146,7 +127,7 @@ export default function ElephantBot() {
     let x = bx + bw - W - 24;
     let y = by + 180;
     let vx = 0, vy = 0;
-    let phys = "air";
+    let phys = 'air';
     let swing = 0, swingVel = 0;
     let lastX = x, lastY = y, smoothVX = 0, smoothVY = 0;
     let visTimer = null, bubbleTimer = null, talkTimer = null;
@@ -162,30 +143,30 @@ export default function ElephantBot() {
     const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
     const setVis = (name) => {
-      sprite.className = "ebot-sprite is-" + name;
-      root.classList.toggle("landed", name === "land");
+      sprite.className = 'ebot-sprite is-' + name;
+      root.classList.toggle('landed', name === 'land');
     };
     const clearVisTimer = () => { if (visTimer) { clearTimeout(visTimer); visTimer = null; } };
 
     const showBubble = (text, ms) => {
       bubble.textContent = text;
-      bubble.classList.add("show");
+      bubble.classList.add('show');
       clearTimeout(bubbleTimer);
-      bubbleTimer = setTimeout(() => { bubble.classList.remove("show"); }, ms || 4000);
+      bubbleTimer = setTimeout(() => { bubble.classList.remove('show'); }, ms || 4000);
     };
-    const hideBubble = () => { clearTimeout(bubbleTimer); bubble.classList.remove("show"); };
+    const hideBubble = () => { clearTimeout(bubbleTimer); bubble.classList.remove('show'); };
 
     const land = () => {
       clearVisTimer();
-      setVis("land");
+      setVis('land');
       visTimer = setTimeout(() => {
-        setVis("getup");
+        setVis('getup');
         visTimer = setTimeout(() => {
           visTimer = null;
-          setVis("idle");
+          setVis('idle');
           if (!landedOnce) {
             landedOnce = true;
-            showBubble("Ayubowan! 🙏 Tap me to chat, or pick me up!", 5000);
+            showBubble('Ayubowan! 🙏 Tap me to chat, or pick me up!', 5000);
           }
         }, 520);
       }, 1250);
@@ -196,11 +177,11 @@ export default function ElephantBot() {
       last = now;
       updateBounds();
 
-      if (phys === "drag") {
+      if (phys === 'drag') {
         const rvx = (x - lastX) / dt, rvy = (y - lastY) / dt;
         smoothVX = smoothVX * 0.6 + rvx * 0.4;
         smoothVY = smoothVY * 0.6 + rvy * 0.4;
-      } else if (phys === "air") {
+      } else if (phys === 'air') {
         vy += GRAVITY * dt;
         x += vx * dt;
         y += vy * dt;
@@ -216,12 +197,12 @@ export default function ElephantBot() {
             if (impact > 8 && !visTimer) land();
           } else {
             vy = 0;
-            phys = "ground";
-            root.classList.remove("air");
-            if (!visTimer) setVis("idle");
+            phys = 'ground';
+            root.classList.remove('air');
+            if (!visTimer) setVis('idle');
           }
         }
-      } else if (phys === "ground") {
+      } else if (phys === 'ground') {
         x += vx * dt;
         vx *= Math.pow(0.82, dt);
         if (Math.abs(vx) < 0.1) vx = 0;
@@ -229,11 +210,11 @@ export default function ElephantBot() {
         y = floorY();
       }
 
-      const target = phys === "drag" ? clamp(smoothVX * 1.8, -40, 40) : 0;
+      const target = phys === 'drag' ? clamp(smoothVX * 1.8, -40, 40) : 0;
       swingVel = swingVel * 0.84 + (target - swing) * 0.12;
       swing += swingVel * dt;
-      if (phys !== "drag" && Math.abs(swing) < 0.05 && Math.abs(swingVel) < 0.05) swing = 0;
-      sprite.style.setProperty("--swing", swing.toFixed(2) + "deg");
+      if (phys !== 'drag' && Math.abs(swing) < 0.05 && Math.abs(swingVel) < 0.05) swing = 0;
+      sprite.style.setProperty('--swing', swing.toFixed(2) + 'deg');
 
       lastX = x; lastY = y;
       root.style.transform = `translate3d(${x.toFixed(1)}px,${y.toFixed(1)}px,0)`;
@@ -254,10 +235,10 @@ export default function ElephantBot() {
       if (!dragging) {
         if (Math.hypot(e.clientX - startX, e.clientY - startY) < DRAG_THRESHOLD) return;
         dragging = true;
-        phys = "drag";
+        phys = 'drag';
         clearVisTimer();
-        setVis("drag");
-        root.classList.add("dragging", "air");
+        setVis('drag');
+        root.classList.add('dragging', 'air');
         hideBubble();
         closePanel();
         smoothVX = smoothVY = 0;
@@ -270,34 +251,34 @@ export default function ElephantBot() {
       if (!pressing) return;
       pressing = false;
       try { root.releasePointerCapture(pid); } catch (err) {}
-      root.classList.remove("dragging");
+      root.classList.remove('dragging');
       if (dragging) {
         dragging = false;
         vx = clamp(smoothVX, -30, 30);
         vy = clamp(smoothVY, -30, 30);
-        phys = "air";
-        setVis("fall");
-      } else if (e && e.type === "pointerup") {
+        phys = 'air';
+        setVis('fall');
+      } else if (e && e.type === 'pointerup') {
         togglePanel();
       }
     };
 
-    root.addEventListener("pointerdown", onPointerDown);
-    root.addEventListener("pointermove", onPointerMove);
-    root.addEventListener("pointerup", endPress);
-    root.addEventListener("pointercancel", endPress);
+    root.addEventListener('pointerdown', onPointerDown);
+    root.addEventListener('pointermove', onPointerMove);
+    root.addEventListener('pointerup', endPress);
+    root.addEventListener('pointercancel', endPress);
 
     let isOpen = false, greeted = false;
 
     const placePanel = () => {
       updateBounds();
-      panel.style.width = Math.min(340, bw - 32) + "px";
+      panel.style.width = Math.min(340, bw - 32) + 'px';
       const pw = panel.offsetWidth, ph = panel.offsetHeight;
       let left = clamp(x + W - pw, bx + 16, bx + bw - pw - 16);
       let top = (y > by + bh / 2) ? y - ph - 8 : y + H + 8;
       top = clamp(top, by + 16, by + bh - ph - 16);
-      panel.style.left = left + "px";
-      panel.style.top = top + "px";
+      panel.style.left = left + 'px';
+      panel.style.top = top + 'px';
     };
 
     const openPanel = () => {
@@ -305,10 +286,10 @@ export default function ElephantBot() {
       isOpen = true;
       hideBubble();
       placePanel();
-      panel.classList.add("open");
+      panel.classList.add('open');
       if (!greeted) {
         greeted = true;
-        addMsg(KB.welcome, "bot", true);
+        addMsg(KB.welcome, 'bot', true);
         setChips(KB.startChips);
       }
       setTimeout(() => { input.focus({ preventScroll: true }); }, 220);
@@ -317,17 +298,17 @@ export default function ElephantBot() {
     const closePanel = () => {
       if (!isOpen) return;
       isOpen = false;
-      panel.classList.remove("open");
+      panel.classList.remove('open');
       input.blur();
     };
 
     const togglePanel = () => { isOpen ? closePanel() : openPanel(); };
 
-    panel.querySelector(".ebot-close").addEventListener("click", closePanel);
+    panel.querySelector('.ebot-close').addEventListener('click', closePanel);
 
     const addMsg = (content, who, isHtml) => {
-      const el = document.createElement("div");
-      el.className = "ebot-msg " + who;
+      const el = document.createElement('div');
+      el.className = 'ebot-msg ' + who;
       if (isHtml) el.innerHTML = content; else el.textContent = content;
       msgs.appendChild(el);
       msgs.scrollTop = msgs.scrollHeight;
@@ -335,19 +316,19 @@ export default function ElephantBot() {
     };
 
     const setChips = (list) => {
-      chips.innerHTML = "";
+      chips.innerHTML = '';
       (list || []).forEach((label) => {
-        const b = document.createElement("button");
-        b.type = "button";
+        const b = document.createElement('button');
+        b.type = 'button';
         b.textContent = label;
-        b.addEventListener("click", () => send(label));
+        b.addEventListener('click', () => send(label));
         chips.appendChild(b);
       });
-      chips.style.display = (list && list.length) ? "flex" : "none";
+      chips.style.display = (list && list.length) ? 'flex' : 'none';
     };
 
     const findTopic = (text) => {
-      const q = " " + text.toLowerCase().replace(/[^a-z0-9'\s-]/g, " ").replace(/\s+/g, " ") + " ";
+      const q = ' ' + text.toLowerCase().replace(/[^a-z0-9'\s-]/g, ' ').replace(/\s+/g, ' ') + ' ';
       let best = null, bestScore = 0;
       (KB.topics || []).forEach((t) => {
         let score = 0;
@@ -359,86 +340,87 @@ export default function ElephantBot() {
       return best;
     };
 
-    const getLocalFallback = (text) => {
-      const topic = findTopic(text);
-      return {
-        html: topic ? topic.answer : (KB.fallback || "Ayubowan! Ask me anything about Sri Lanka travel, weather, or hotels."),
-        plain: topic ? topic.answer.replace(/<[^>]+>/g, " ").trim() : (KB.fallback || "Ayubowan!"),
-        nextChips: topic ? topic.chips : (KB.fallbackChips || KB.startChips || [])
-      };
-    };
-
-    const queryChatApi = async (text) => {
-      const apiBase = getChatApiBase();
-      if (!apiBase) return null;
-
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 15000);
-      try {
-        const res = await fetch(`${apiBase}/api/chat`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            message: text,
-            month: new Date().getMonth() + 1,
-            history: chatHistory.slice(-8)
-          }),
-          signal: controller.signal
-        });
-        if (!res.ok) throw new Error(`Chat API error ${res.status}`);
-        const data = await res.json();
-        if (!data || !data.reply) throw new Error("Empty chat reply");
-        return data.reply;
-      } finally {
-        clearTimeout(timeout);
-      }
-    };
+    const toBackendHistory = () =>
+      chatHistory
+        .filter((m) => typeof m.content === 'string' && m.content.trim().length > 0)
+        .slice(-8)
+        .map((m) => ({
+          role: m.role === 'assistant' ? 'assistant' : 'user',
+          content: m.content.trim(),
+        }));
 
     let busy = false;
     const send = async (text) => {
-      text = (text || "").trim();
+      text = (text || '').trim();
       if (!text || busy) return;
       busy = true;
-      addMsg(text, "user", false);
-      input.value = "";
+      addMsg(text, 'user', false);
+      chatHistory.push({ role: 'user', content: text });
+      input.value = '';
       setChips([]);
 
-      const typing = addMsg('<span class="ebot-typing"><i></i><i></i><i></i></span>', "bot", true);
-      const fallback = getLocalFallback(text);
+      const typing = addMsg('<span class="ebot-typing"><i></i><i></i><i></i></span>', 'bot', true);
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
+      const applyFallback = () => {
+        const topic = findTopic(text);
+        const fallbackHtml = topic ? topic.answer : KB.fallback;
+        const plainFallback = fallbackHtml.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+        addMsg(fallbackHtml, 'bot', true);
+        if (plainFallback) {
+          chatHistory.push({ role: 'assistant', content: plainFallback });
+        }
+        setChips(topic ? topic.chips : KB.fallbackChips);
+      };
 
       try {
-        const apiReply = await queryChatApi(text);
-        typing.remove();
-        if (apiReply) {
-          addMsg(formatBotReply(apiReply), "bot", true);
-          chatHistory.push({ role: "user", content: text }, { role: "assistant", content: apiReply });
-          setChips(fallback.nextChips);
-        } else {
-          addMsg(fallback.html, "bot", true);
-          chatHistory.push({ role: "user", content: text }, { role: "assistant", content: fallback.plain });
-          setChips(fallback.nextChips);
+        const res = await fetch(`${API_BASE_URL}/api/chat`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            message: text,
+            history: toBackendHistory(),
+          }),
+          signal: controller.signal,
+        });
+
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}`);
         }
-      } catch (err) {
-        console.warn("Ayu API fallback used:", err);
+
+        const data = await res.json();
+        const replyText = (data && data.reply ? String(data.reply) : '').trim();
+        if (!replyText) {
+          throw new Error('Empty reply from /api/chat');
+        }
+
         typing.remove();
-        addMsg(fallback.html, "bot", true);
-        chatHistory.push({ role: "user", content: text }, { role: "assistant", content: fallback.plain });
-        setChips(fallback.nextChips);
+        addMsg(replyText, 'bot', false);
+        chatHistory.push({ role: 'assistant', content: replyText });
+        setChips([]);
+      } catch (err) {
+        typing.remove();
+        applyFallback();
       } finally {
+        clearTimeout(timeoutId);
         busy = false;
-        root.classList.add("talk");
+        root.classList.add('talk');
         clearTimeout(talkTimer);
-        talkTimer = setTimeout(() => { root.classList.remove("talk"); }, 520);
+        talkTimer = setTimeout(() => { root.classList.remove('talk'); }, 520);
       }
     };
 
-    form.addEventListener("submit", (e) => { e.preventDefault(); send(input.value); });
+    form.addEventListener('submit', (e) => { e.preventDefault(); send(input.value); });
 
-    setVis("fall");
+    setVis('fall');
     animId = requestAnimationFrame((t) => { last = t; requestAnimationFrame(frame); });
 
     return () => {
       if (animId) cancelAnimationFrame(animId);
+      clearTimeout(visTimer);
+      clearTimeout(bubbleTimer);
+      clearTimeout(talkTimer);
       root.remove();
       panel.remove();
     };

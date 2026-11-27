@@ -1,15 +1,22 @@
 from datetime import datetime
 import os
 from pathlib import Path
-from typing import List, Literal, Optional
+from typing import Any, List, Literal, Optional
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 try:
     from dotenv import load_dotenv
-    ENV_PATH = Path(__file__).resolve().parent.parent / ".env"
-    load_dotenv(dotenv_path=ENV_PATH, override=True)
+
+    BASE_DIR = Path(__file__).resolve().parent
+    PARENT_ENV = BASE_DIR.parent / ".env"
+    API_ENV = BASE_DIR / ".env"
+
+    if PARENT_ENV.exists():
+        load_dotenv(dotenv_path=PARENT_ENV, override=True)
+    if API_ENV.exists():
+        load_dotenv(dotenv_path=API_ENV, override=True)
 except ImportError:
     pass
 
@@ -71,15 +78,79 @@ class ChatRequest(BaseModel):
     month: Optional[int | str] = None
     history: List[ChatMessage] = Field(default_factory=list)
 
+    @field_validator("history", mode="before")
+    @classmethod
+    def sanitize_history(cls, v: Any) -> List[dict]:
+        if not isinstance(v, list):
+            return []
+
+        cleaned: List[dict] = []
+        for item in v:
+            if not isinstance(item, dict):
+                continue
+
+            raw_role = str(item.get("role") or "user").strip().lower()
+            role = "assistant" if raw_role in ("assistant", "bot", "model", "ai") else "user"
+
+            raw_text = item.get("content")
+            if raw_text is None:
+                raw_text = item.get("text")
+            if raw_text is None:
+                raw_text = item.get("message")
+
+            text = str(raw_text or "").strip()
+            if text:
+                cleaned.append({"role": role, "content": text})
+
+        return cleaned
+
 
 def normalize_zone(region: str, name: str = "") -> str:
     combined = f"{region or ''} {name or ''}".lower()
 
-    if any(k in combined for k in ["south coast", "south", "west", "galle", "bentota", "mirissa", "unawatuna", "weligama", "colombo", "negombo"]):
+    if any(
+        k in combined
+        for k in [
+            "south coast",
+            "south",
+            "west",
+            "galle",
+            "bentota",
+            "mirissa",
+            "unawatuna",
+            "weligama",
+            "colombo",
+            "negombo",
+        ]
+    ):
         return "south_west"
-    if any(k in combined for k in ["east coast", "east", "pasikuda", "pasikudah", "trincomalee", "batticaloa", "arugam", "jaffna", "north"]):
+    if any(
+        k in combined
+        for k in [
+            "east coast",
+            "east",
+            "pasikuda",
+            "pasikudah",
+            "trincomalee",
+            "batticaloa",
+            "arugam",
+            "jaffna",
+            "north",
+        ]
+    ):
         return "east_north"
-    if any(k in combined for k in ["hill country", "hill", "hatton", "kandy", "ella", "nuwara eliya", "haputale"]):
+    if any(
+        k in combined
+        for k in [
+            "hill country",
+            "hill",
+            "hatton",
+            "kandy",
+            "ella",
+            "nuwara eliya",
+            "haputale",
+        ]
+    ):
         return "hill_country"
     return "cultural"
 
@@ -172,9 +243,21 @@ def evaluate_monsoon(zone: str, month: int) -> dict:
     }
 
 
+@app.get("/api/health")
+def health_check():
+    return {
+        "status": "ok",
+        "gemini_configured": gemini_client is not None,
+    }
+
+
 @app.post("/api/hotels/rank")
 def rank_hotels(payload: RankHotelsRequest):
-    target_month = payload.month if (payload.month and 1 <= payload.month <= 12) else datetime.now().month
+    target_month = (
+        payload.month
+        if (payload.month and 1 <= payload.month <= 12)
+        else datetime.now().month
+    )
 
     ranked_list = []
     for hotel in payload.hotels:
@@ -188,15 +271,17 @@ def rank_hotels(payload: RankHotelsRequest):
         raw_score = (info["base_fit"] * 0.75) + (rating_component * 0.25)
         final_score = int(round(max(25, min(99, raw_score - info["penalty"]))))
 
-        ranked_list.append({
-            **hotel.model_dump(),
-            "zone": zone,
-            "score": final_score,
-            "trip_fit_score": final_score,
-            "monsoon_active": info["monsoon_active"],
-            "season_label": info["season_label"],
-            "plainEnglish": info["summary"],
-        })
+        ranked_list.append(
+            {
+                **hotel.model_dump(),
+                "zone": zone,
+                "score": final_score,
+                "trip_fit_score": final_score,
+                "monsoon_active": info["monsoon_active"],
+                "season_label": info["season_label"],
+                "plainEnglish": info["summary"],
+            }
+        )
 
     # Top level: No-monsoon hotels (monsoon_active == False) first, then highest Trip Fit Score
     ranked_list.sort(
@@ -228,8 +313,8 @@ def chat_with_ayu(payload: ChatRequest):
     if gemini_client is None or types is None:
         return {
             "reply": (
-                "Ayu is running in basic fallback mode right now because GEMINI_API_KEY is not set on the server. "
-                "Ask me about Sri Lanka regions (Cultural Triangle, East Coast, South Coast, Hill Country), monsoon months, or hotels!"
+                "Ayu couldn't connect to Gemini because GEMINI_API_KEY is missing or google-genai is not installed on the backend. "
+                "Add GEMINI_API_KEY to lankastay-app/.env or lankastay-app/api/.env and restart uvicorn."
             ),
             "source": "fallback",
         }
@@ -256,17 +341,34 @@ def chat_with_ayu(payload: ChatRequest):
         )
     )
 
-    try:
-        response = gemini_client.models.generate_content(
-            model="gemini-3.8-flash",
-            contents=contents,
-            config=types.GenerateContentConfig(
-                system_instruction=AYU_SYSTEM_PROMPT,
-            ),
-        )
-        return {
-            "reply": response.text or "I couldn't generate a response right now. Please try again.",
-            "source": "gemini",
-        }
-    except Exception as exc:
-        raise HTTPException(status_code=502, detail=f"Ayu AI error: {exc}")
+    models_to_try = [
+        "gemini-3.8-flash", 
+        "gemini-3.5-flash-lite", 
+        "gemini-2.5-flash", 
+        "gemini-2.5-flash-lite",
+    ]
+    last_error = None
+
+    for model_name in models_to_try:
+        try:
+            response = gemini_client.models.generate_content(
+                model=model_name,
+                contents=contents,
+                config=types.GenerateContentConfig(
+                    system_instruction=AYU_SYSTEM_PROMPT,
+                ),
+            )
+            reply_text = (response.text or "").strip()
+            if reply_text:
+                return {
+                    "reply": reply_text,
+                    "source": "gemini",
+                    "model": model_name,
+                }
+        except Exception as exc:
+            last_error = exc
+            continue
+
+    raise HTTPException(status_code=502, detail=f"Ayu AI error: {last_error}")
+
+
